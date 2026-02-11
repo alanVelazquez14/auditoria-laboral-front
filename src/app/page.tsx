@@ -137,8 +137,7 @@ const LandingHero = () => {
           </div>
         </section>
 
-        <div className="max-w-7xl mx-auto px-4 mt-20">
-          {/* Contenedor principal con bordes redondeados y fondo oscuro sutil */}
+        <div className="max-w-7xl mx-auto">
           <div className="bg-[#12121a]/30 border border-gray-800/40 rounded-2xl py-12 flex flex-col items-center justify-center text-center">
             <h2 className="text-white text-xl md:text-2xl font-bold mb-1">
               No prometemos trabajo.
