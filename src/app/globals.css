@@ -6,7 +6,7 @@ body{
 }
 
 @theme {
-  --color-background: #0d0c1c;
+  --color-background: #090812;
   --color-card-bg: #121217;
   --color-brand-purple: #7c3aed;
 }
@@ -28,4 +28,8 @@ body{
     min-height: 100vh;
     color: white;
   }
+}
+
+html {
+  scroll-behavior: smooth;
 }
