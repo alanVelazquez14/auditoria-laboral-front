@@ -1,4 +1,3 @@
-// components/auth/RegisterForm.tsx
 import { useState } from "react";
 import { User, Mail, Lock } from "lucide-react";
 

@@ -1,8 +1,10 @@
 import { useState } from "react";
 import { Mail, Lock } from "lucide-react";
+import { useRouter } from "next/navigation";
 
 export const LoginForm = () => {
   const [loginData, setLoginData] = useState({ email: "", password: "" });
+  const router = useRouter();
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -27,7 +29,7 @@ export const LoginForm = () => {
         throw new Error(data.message || "Error al iniciar sesión");
 
       localStorage.setItem("token", data.token);
-      alert("Login exitoso!");
+      router.push("/home");
     } catch (error: any) {
       console.error("Error:", error.message);
       alert(`Error: ${error.message}`);
