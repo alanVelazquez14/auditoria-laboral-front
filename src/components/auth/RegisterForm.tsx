@@ -2,7 +2,7 @@ import { useState } from "react";
 import { User, Mail, Lock } from "lucide-react";
 
 interface RegisterFormProps {
-  onSuccess?: () => void;
+  onSuccess?: (userId: string) => void;
 }
 
 const RegisterForm = ({ onSuccess }: RegisterFormProps) => {
@@ -15,7 +15,7 @@ const RegisterForm = ({ onSuccess }: RegisterFormProps) => {
 
   const handleRegister = async (e: React.FormEvent) => {
     e.preventDefault();
-    setErrorMessage(""); // resetear error anterior
+    setErrorMessage("");
     try {
       const response = await fetch(
         `${process.env.NEXT_PUBLIC_API_URL}/api/users/register`,
@@ -29,15 +29,22 @@ const RegisterForm = ({ onSuccess }: RegisterFormProps) => {
       );
 
       const data = await response.json();
+      console.log("Respuesta del servidor:", data);
 
       if (!response.ok) {
         setErrorMessage(data.message || "Error al registrarse");
         return;
       }
 
+      if (response.ok) {
+        localStorage.setItem("userId", data.id);
+        localStorage.setItem("token", data.token);
+
+        if (onSuccess) onSuccess(data.id);
+      }
       // Registro exitoso
       alert("Registro exitoso!");
-      if (onSuccess) onSuccess();
+      if (onSuccess) onSuccess(data.id);
     } catch (error: any) {
       setErrorMessage(error.message || "Error inesperado");
     }

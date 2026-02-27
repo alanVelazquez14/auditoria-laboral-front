@@ -27,8 +27,11 @@ export const LoginForm = () => {
 
       if (!response.ok)
         throw new Error(data.message || "Error al iniciar sesión");
-
       localStorage.setItem("token", data.token);
+
+      if (data.user && data.user.id) {
+        localStorage.setItem("userId", data.user.id);
+      }
       router.push("/home");
     } catch (error: any) {
       console.error("Error:", error.message);

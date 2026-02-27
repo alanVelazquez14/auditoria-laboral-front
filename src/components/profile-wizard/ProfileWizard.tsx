@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { ChevronLeft, ArrowRight } from "lucide-react";
 import StepLocation from "./StepLocation";
 import StepCV from "./StepCV";
@@ -36,8 +36,6 @@ export default function ProfileWizard() {
       linkedin: "yes" | "no" | "unknown" | null;
       github: "yes" | "no" | "unknown" | null;
     };
-    availability: string[];
-    interests: string[];
     consentToShareData: boolean | null;
     additionalNotes: string;
   }>({
@@ -58,16 +56,20 @@ export default function ProfileWizard() {
     stackMatchesCV: null,
     portfolioLinks: { portfolio: "", linkedin: "", github: "" },
     linkStatus: { portfolio: null, linkedin: null, github: null },
-    availability: [],
-    interests: [],
     consentToShareData: null,
     additionalNotes: "",
   });
 
-  const nextStep = () => {
+  const nextStep = async () => {
     if (!isStepValid()) return;
-    setStep((prev) => Math.min(prev + 1, 7));
+
+    if (step === 7) {
+      await handleFinish();
+    } else {
+      setStep((prev) => Math.min(prev + 1, 7));
+    }
   };
+
   const prevStep = () => setStep((prev) => Math.max(prev - 1, 1));
 
   const renderStep = () => {
@@ -262,14 +264,85 @@ export default function ProfileWizard() {
         );
 
       case 7:
-        return (
-          formData.consentToShareData === true ||
-          (formData.consentToShareData === false &&
-            formData.additionalNotes.trim().length > 0)
-        );
-
-      case 7:
         return formData.consentToShareData === true;
+    }
+  };
+
+  const handleFinish = async () => {
+    const userId = localStorage.getItem("userId");
+    const token = localStorage.getItem("token");
+
+    if (!userId || !token) {
+      alert("No se encontró el usuario logueado.");
+      return;
+    }
+
+    const roleMapping: Record<string, string> = {
+      frontend: "frontend",
+      backend: "backend",
+      fullstack: "fullstack",
+      "full stack": "fullstack",
+      mobile: "mobile",
+      devops: "devops",
+      data: "data",
+    };
+
+    const seniorityMap: Record<string, string> = {
+      trainee: "tr",
+      junior: "jr",
+      semisenior: "ssr",
+      senior: "sr",
+    };
+
+    try {
+      const finalCvUrl = "https://mi-cv.com/archivo-subido.pdf"; // temporal
+
+      const { linkStatus, portfolioLinks, ...restOfFormData } = formData;
+
+      const rawRole = formData.targetRole.trim().toLowerCase();
+      const finalRole = roleMapping[rawRole] || "fullstack";
+
+      const payload = {
+        ...restOfFormData,
+        portfolioLinks,
+        cvUrl: "https://mi-cv.com/archivo-subido.pdf",
+        cvType: "file",
+        targetRole: finalRole,
+        seniority: seniorityMap[formData.seniority.toLowerCase()] || "jr",
+      };
+
+      const validRoles = [
+        "frontend",
+        "backend",
+        "fullstack",
+        "mobile",
+        "devops",
+        "data",
+      ];
+      if (!validRoles.includes(payload.targetRole)) {
+        console.error("TargetRole inválido:", payload.targetRole);
+      }
+
+      const response = await fetch(
+        `${process.env.NEXT_PUBLIC_API_URL}/api/users/${userId}/profile`,
+        {
+          method: "PATCH",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${token}`,
+          },
+          body: JSON.stringify(payload),
+        },
+      );
+
+      if (response.ok) {
+        await response.json();
+        alert("¡Perfil completado con éxito!");
+      } else {
+        await response.json();
+      }
+    } catch (error: any) {
+      alert("Hubo un error al guardar tus datos: " + error.message);
     }
   };
 
