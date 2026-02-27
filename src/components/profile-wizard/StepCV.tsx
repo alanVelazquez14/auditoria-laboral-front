@@ -5,8 +5,8 @@ import { Upload, CheckCircle2 } from "lucide-react";
 type StepCVProps = {
   cvFile: File | null;
   setCvFile: (file: File | null) => void;
-  isRoleOptimized: boolean | null;
-  setIsRoleOptimized: (value: boolean) => void;
+  isRoleOptimized: "complete" | "partial" | "no" | null;
+  setIsRoleOptimized: (value: "complete" | "partial" | "no") => void;
 };
 
 export default function StepCV({
@@ -59,31 +59,43 @@ export default function StepCV({
           </>
         )}
       </label>
+
       <div>
         <h3 className="text-lg font-bold text-white mb-2 mt-10">
           ¿Tu CV está adaptado específicamente al rol al que querés postularte?
         </h3>
         <div className="flex gap-4 mt-4">
           <button
-            onClick={() => setIsRoleOptimized(true)}
+            onClick={() => setIsRoleOptimized("complete")}
             className={`flex-1 py-3 rounded-xl border transition-all cursor-pointer ${
-              isRoleOptimized === true
+              isRoleOptimized === "complete"
                 ? "bg-cyan-500/10 border-cyan-500/50 text-cyan-400"
                 : "bg-[#111118] border-white/10 text-gray-400 hover:border-purple-500/50"
             }`}
           >
-            Sí
+            Sí, completamente adaptado
           </button>
 
           <button
-            onClick={() => setIsRoleOptimized(false)}
+            onClick={() => setIsRoleOptimized("partial")}
             className={`flex-1 py-3 rounded-xl border transition-all cursor-pointer ${
-              isRoleOptimized === false
+              isRoleOptimized === "partial"
                 ? "bg-cyan-500/10 border-cyan-500/50 text-cyan-400"
                 : "bg-[#111118] border-white/10 text-gray-400 hover:border-purple-500/50"
             }`}
           >
-            No
+            Parcialmente adaptado
+          </button>
+
+          <button
+            onClick={() => setIsRoleOptimized("no")}
+            className={`flex-1 py-3 rounded-xl border transition-all cursor-pointer ${
+              isRoleOptimized === "no"
+                ? "bg-cyan-500/10 border-cyan-500/50 text-cyan-400"
+                : "bg-[#111118] border-white/10 text-gray-400 hover:border-purple-500/50"
+            }`}
+          >
+            No adaptado
           </button>
         </div>
       </div>

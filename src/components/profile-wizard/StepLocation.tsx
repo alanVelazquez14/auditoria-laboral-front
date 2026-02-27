@@ -6,10 +6,12 @@ import { useState, useEffect } from "react";
 type StepLocationProps = {
   value: string;
   onChange: (value: string) => void;
-  isOpenToRemote: boolean | null;
-  setIsOpenToRemote: (value: boolean) => void;
-  setIsOpenToEnglish: (value: boolean) => void;
-  isOpenToEnglish: boolean | null;
+  workPreference: "REMOTO" | "PRESENCIAL" | "HIBRIDO" | null;
+  setWorkPreference: (value: "REMOTO" | "PRESENCIAL" | "HIBRIDO") => void;
+  englishLevel: "Básico" | "Intermedio" | "Avanzado" | "Nativo" | null;
+  setEnglishLevel: (
+    value: "Básico" | "Intermedio" | "Avanzado" | "Nativo",
+  ) => void;
 };
 
 type Suggestion = {
@@ -20,10 +22,10 @@ type Suggestion = {
 export default function StepLocation({
   value,
   onChange,
-  isOpenToRemote,
-  setIsOpenToRemote,
-  setIsOpenToEnglish,
-  isOpenToEnglish,
+  workPreference,
+  setWorkPreference,
+  englishLevel,
+  setEnglishLevel,
 }: StepLocationProps) {
   const [suggestions, setSuggestions] = useState<Suggestion[]>([]);
   const [isFocused, setIsFocused] = useState(false);
@@ -103,61 +105,49 @@ export default function StepLocation({
 
       <div>
         <h3 className="text-lg font-semibold text-white">
-          ¿Estás dispuesto a trabajar remoto para el exterior?
+          ¿Cuál es tu preferencia de trabajo?
         </h3>
-
         <div className="flex gap-4 mt-4">
-          <button
-            onClick={() => setIsOpenToRemote(true)}
-            className={`flex-1 py-3 rounded-xl border transition-all ${
-              isOpenToRemote === true
-                ? "bg-cyan-500/10 border-cyan-500/50 text-cyan-400"
-                : "bg-[#111118] border-white/10 text-gray-400 hover:border-purple-500/50"
-            }`}
-          >
-            Sí
-          </button>
-
-          <button
-            onClick={() => setIsOpenToRemote(false)}
-            className={`flex-1 py-3 rounded-xl border transition-all ${
-              isOpenToRemote === false
-                ? "bg-cyan-500/10 border-cyan-500/50 text-cyan-400"
-                : "bg-[#111118] border-white/10 text-gray-400 hover:border-purple-500/50"
-            }`}
-          >
-            No
-          </button>
+          {["REMOTO", "PRESENCIAL", "HIBRIDO"].map((mode) => (
+            <button
+              key={mode}
+              onClick={() =>
+                setWorkPreference(mode as "REMOTO" | "PRESENCIAL" | "HIBRIDO")
+              }
+              className={`flex-1 py-3 rounded-xl border transition-all ${
+                workPreference === mode
+                  ? "bg-cyan-500/10 border-cyan-500/50 text-cyan-400"
+                  : "bg-[#111118] border-white/10 text-gray-400 hover:border-purple-500/50"
+              }`}
+            >
+              {mode.charAt(0) + mode.slice(1).toLowerCase()}
+            </button>
+          ))}
         </div>
       </div>
 
       <div>
-        <h3 className="text-lg font-semibold text-white">
-          ¿Te sentís cómodo trabajando en inglés (reuniones y documentación)?
+        <h3 className="text-lg font-semibold text-white mt-6">
+          Nivel de inglés (reuniones y documentación)
         </h3>
-
         <div className="flex gap-4 mt-4">
-          <button
-            onClick={() => setIsOpenToEnglish(true)}
-            className={`flex-1 py-3 rounded-xl border transition-all ${
-              isOpenToEnglish === true
-                ? "bg-cyan-500/10 border-cyan-500/50 text-cyan-400"
-                : "bg-[#111118] border-white/10 text-gray-400 hover:border-purple-500/50"
-            }`}
-          >
-            Sí
-          </button>
-
-          <button
-            onClick={() => setIsOpenToEnglish(false)}
-            className={`flex-1 py-3 rounded-xl border transition-all ${
-              isOpenToEnglish === false
-                ? "bg-cyan-500/10 border-cyan-500/50 text-cyan-400"
-                : "bg-[#111118] border-white/10 text-gray-400 hover:border-purple-500/50"
-            }`}
-          >
-            No
-          </button>
+          {["Básico", "Intermedio", "Avanzado", "Nativo"].map((level) => (
+            <button
+              key={level}
+              onClick={() =>
+                setEnglishLevel(
+                  level as "Básico" | "Intermedio" | "Avanzado" | "Nativo",
+                )
+              }
+              className={`flex-1 py-3 rounded-xl border transition-all ${
+                englishLevel === level
+                  ? "bg-cyan-500/10 border-cyan-500/50 text-cyan-400"
+                  : "bg-[#111118] border-white/10 text-gray-400 hover:border-purple-500/50"
+              }`}
+            >
+              {level}
+            </button>
+          ))}
         </div>
       </div>
 

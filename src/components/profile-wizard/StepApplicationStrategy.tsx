@@ -38,10 +38,10 @@ export default function StepApplicationStrategy({
   const optionsApplicationType = [
     "Aplico masivamente (mismo CV)",
     "Personalizo CV según empresa",
-    "Solo aplico a ofertas muy específicas",
-    "Uso referidos/contactos",
     "Uso solo LinkedIn para aplicar",
     "Uso portales de empleo (Bumeran, ZonaJobs, etc.)",
+    "Busco networking o referidos",
+    "Aplico a través de reclutadores o headhunters",
   ];
 
   return (
@@ -118,12 +118,10 @@ export default function StepApplicationStrategy({
                 key={option}
                 onClick={() => {
                   if (isSelected) {
-                    // quitar si ya estaba seleccionado
                     setApplicationType(
                       applicationType.filter((a) => a !== option),
                     );
                   } else {
-                    // agregar al array
                     setApplicationType([...applicationType, option]);
                   }
                 }}

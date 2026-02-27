@@ -279,6 +279,13 @@ export default function StepStack({
           </button>
         </div>
       </div>
+
+      <div className="bg-[#1a1a24] p-4 rounded-xl border border-white/5">
+        <p className="text-purple-400/80 text-[15px] text-center">
+          Sé específico: la calidad de tu experiencia importa más que la
+          cantidad de tecnologías que conozcas.
+        </p>
+      </div>
     </div>
   );
 }
