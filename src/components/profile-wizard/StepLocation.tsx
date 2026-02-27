@@ -8,6 +8,8 @@ type StepLocationProps = {
   onChange: (value: string) => void;
   isOpenToRemote: boolean | null;
   setIsOpenToRemote: (value: boolean) => void;
+  setIsOpenToEnglish: (value: boolean) => void;
+  isOpenToEnglish: boolean | null;
 };
 
 type Suggestion = {
@@ -20,6 +22,8 @@ export default function StepLocation({
   onChange,
   isOpenToRemote,
   setIsOpenToRemote,
+  setIsOpenToEnglish,
+  isOpenToEnglish,
 }: StepLocationProps) {
   const [suggestions, setSuggestions] = useState<Suggestion[]>([]);
   const [isFocused, setIsFocused] = useState(false);
@@ -126,7 +130,37 @@ export default function StepLocation({
           </button>
         </div>
       </div>
-      
+
+      <div>
+        <h3 className="text-lg font-semibold text-white">
+          ¿Te sentís cómodo trabajando en inglés (reuniones y documentación)?
+        </h3>
+
+        <div className="flex gap-4 mt-4">
+          <button
+            onClick={() => setIsOpenToEnglish(true)}
+            className={`flex-1 py-3 rounded-xl border transition-all ${
+              isOpenToEnglish === true
+                ? "bg-cyan-500/10 border-cyan-500/50 text-cyan-400"
+                : "bg-[#111118] border-white/10 text-gray-400 hover:border-purple-500/50"
+            }`}
+          >
+            Sí
+          </button>
+
+          <button
+            onClick={() => setIsOpenToEnglish(false)}
+            className={`flex-1 py-3 rounded-xl border transition-all ${
+              isOpenToEnglish === false
+                ? "bg-cyan-500/10 border-cyan-500/50 text-cyan-400"
+                : "bg-[#111118] border-white/10 text-gray-400 hover:border-purple-500/50"
+            }`}
+          >
+            No
+          </button>
+        </div>
+      </div>
+
       <div className="bg-[#1a1a24] p-4 rounded-xl border border-white/5">
         <p className="text-purple-400/80 text-[15px] text-center">
           La ubicacion impacta directamente en las oportunidades disponibles.

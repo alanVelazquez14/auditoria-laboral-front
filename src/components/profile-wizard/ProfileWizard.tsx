@@ -5,6 +5,10 @@ import { ChevronLeft, ArrowRight } from "lucide-react";
 import StepLocation from "./StepLocation";
 import StepCV from "./StepCV";
 import StepSeniority from "./StepSeniority";
+import StepStack from "./StepStack";
+import StepApplicationStrategy from "./StepApplicationStrategy";
+import StepWorkPreferences from "./StepWorkPreferences";
+import StepFinal from "./StepFinal";
 
 export default function ProfileWizard() {
   const [step, setStep] = useState(1);
@@ -15,12 +19,22 @@ export default function ProfileWizard() {
     seniority: "",
     targetRole: "",
     yearsExperience: "",
-    applicationType: "",
-    recentApplications: 0,
-    interviews: 0,
-    recentRejections: 0,
+    applicationType: [] as string[],
+    recentApplications: "",
+    interviews: "",
+    recentRejections: "",
     isRoleOptimized: null as boolean | null,
     isOpenToRemote: null as boolean | null,
+    isOpenToEnglish: null as boolean | null,
+    stack: [] as string[],
+    stackYears: "",
+    stackExperienceType: [] as string[],
+    stackMatchesCV: null as boolean | null,
+    workMode: [] as string[],
+    availability: [] as string[],
+    interests: [] as string[],
+    consentToShareData: null as boolean | null,
+    additionalNotes: "",
   });
 
   const nextStep = () => {
@@ -54,6 +68,10 @@ export default function ProfileWizard() {
             setIsOpenToRemote={(value) =>
               setFormData({ ...formData, isOpenToRemote: value })
             }
+            isOpenToEnglish={formData.isOpenToEnglish}
+            setIsOpenToEnglish={(value) =>
+              setFormData({ ...formData, isOpenToEnglish: value })
+            }
           />
         );
 
@@ -77,8 +95,81 @@ export default function ProfileWizard() {
           />
         );
 
-      default:
-        return null;
+      case 4:
+        return (
+          <StepStack
+            stack={formData.stack}
+            setStack={(value) =>
+              setFormData((prev) => ({ ...prev, stack: value }))
+            }
+            stackYears={formData.stackYears}
+            setStackYears={(value) =>
+              setFormData((prev) => ({ ...prev, stackYears: value }))
+            }
+            stackExperienceType={formData.stackExperienceType}
+            setStackExperienceType={(value) =>
+              setFormData((prev) => ({ ...prev, stackExperienceType: value }))
+            }
+            stackMatchesCV={formData.stackMatchesCV}
+            setStackMatchesCV={(value) =>
+              setFormData((prev) => ({ ...prev, stackMatchesCV: value }))
+            }
+          />
+        );
+
+      case 5:
+        return (
+          <StepApplicationStrategy
+            recentApplications={formData.recentApplications}
+            setRecentApplications={(value) =>
+              setFormData((prev) => ({ ...prev, recentApplications: value }))
+            }
+            interviews={formData.interviews}
+            setInterviews={(value) =>
+              setFormData((prev) => ({ ...prev, interviews: value }))
+            }
+            recentRejections={formData.recentRejections}
+            setRecentRejections={(value) =>
+              setFormData((prev) => ({ ...prev, recentRejections: value }))
+            }
+            applicationType={formData.applicationType}
+            setApplicationType={(value) =>
+              setFormData((prev) => ({ ...prev, applicationType: value }))
+            }
+          />
+        );
+
+      case 6:
+        return (
+          <StepWorkPreferences
+            workMode={formData.workMode}
+            setWorkMode={(value) =>
+              setFormData((prev) => ({ ...prev, workMode: value }))
+            }
+            availability={formData.availability}
+            setAvailability={(value) =>
+              setFormData((prev) => ({ ...prev, availability: value }))
+            }
+            interests={formData.interests}
+            setInterests={(value) =>
+              setFormData((prev) => ({ ...prev, interests: value }))
+            }
+          />
+        );
+
+      case 7:
+        return (
+          <StepFinal
+            consentToShareData={formData.consentToShareData}
+            setConsentToShareData={(value) =>
+              setFormData((prev) => ({ ...prev, consentToShareData: value }))
+            }
+            additionalNotes={formData.additionalNotes}
+            setAdditionalNotes={(value) =>
+              setFormData((prev) => ({ ...prev, additionalNotes: value }))
+            }
+          />
+        );
     }
   };
 
@@ -111,7 +202,9 @@ export default function ProfileWizard() {
 
       case 2:
         return (
-          formData.location.trim() !== "" && formData.isOpenToRemote !== null
+          formData.location.trim() !== "" &&
+          formData.isOpenToRemote !== null &&
+          formData.isOpenToEnglish !== null
         );
 
       case 3:
@@ -121,8 +214,39 @@ export default function ProfileWizard() {
           formData.yearsExperience !== ""
         );
 
-      default:
-        return true;
+      case 4:
+        return (
+          formData.stack.length > 0 &&
+          formData.stackYears !== "" &&
+          formData.stackExperienceType.length > 0 &&
+          formData.stackMatchesCV !== null
+        );
+
+      case 5:
+        return (
+          formData.recentApplications.length > 0 &&
+          formData.applicationType.length > 0
+        );
+
+      case 6:
+        return formData.workMode.length > 0 && formData.availability.length > 0;
+
+      case 7:
+        return (
+          <StepFinal
+            consentToShareData={formData.consentToShareData}
+            setConsentToShareData={(value) =>
+              setFormData((prev) => ({ ...prev, consentToShareData: value }))
+            }
+            additionalNotes={formData.additionalNotes}
+            setAdditionalNotes={(value) =>
+              setFormData((prev) => ({ ...prev, additionalNotes: value }))
+            }
+          />
+        );
+
+      case 7:
+        return formData.consentToShareData === true;
     }
   };
 

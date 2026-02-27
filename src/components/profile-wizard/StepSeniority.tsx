@@ -1,6 +1,21 @@
 "use client";
 
 import { Briefcase } from "lucide-react";
+import { useEffect, useState } from "react";
+
+const ROLE_SUGGESTIONS = [
+  "Frontend Developer",
+  "Backend Developer",
+  "Fullstack Developer",
+  "Mobile Developer",
+  "DevOps Engineer",
+  "QA Automation",
+  "Data Engineer",
+  "Data Analyst",
+  "Machine Learning Engineer",
+  "UI/UX Designer",
+  "Product Manager",
+];
 
 type StepSeniorityProps = {
   targetRole: string;
@@ -23,6 +38,10 @@ export default function StepSeniority({
   recommendedSeniority,
   isCoherent,
 }: StepSeniorityProps) {
+  const [filteredRoles, setFilteredRoles] = useState<string[]>([]);
+  const [isFocusedRole, setIsFocusedRole] = useState(false);
+  const [activeRoleIndex, setActiveRoleIndex] = useState(-1);
+
   const inputClasses =
     "w-full bg-[#1a1a24] border border-white/10 rounded-xl p-4 text-white focus:border-purple-500 outline-none transition-all";
 
@@ -34,6 +53,21 @@ export default function StepSeniority({
     { label: "3 – 5 años", value: "3-5" },
     { label: "5+ años", value: "5+" },
   ];
+
+  useEffect(() => {
+    if (!targetRole.trim()) {
+      setFilteredRoles([]);
+      setActiveRoleIndex(-1);
+      return;
+    }
+
+    const filtered = ROLE_SUGGESTIONS.filter((role) =>
+      role.toLowerCase().includes(targetRole.toLowerCase()),
+    );
+
+    setFilteredRoles(filtered.slice(0, 5));
+    setActiveRoleIndex(-1);
+  }, [targetRole]);
 
   return (
     <div className="space-y-6 animate-in fade-in slide-in-from-right-4 duration-500">
@@ -57,7 +91,55 @@ export default function StepSeniority({
           className={inputClasses}
           value={targetRole}
           onChange={(e) => setTargetRole(e.target.value)}
+          onFocus={() => setIsFocusedRole(true)}
+          onBlur={() => setTimeout(() => setIsFocusedRole(false), 150)}
+          onKeyDown={(e) => {
+            if (e.key === "ArrowDown") {
+              e.preventDefault();
+              setActiveRoleIndex((prev) =>
+                prev < filteredRoles.length - 1 ? prev + 1 : prev,
+              );
+            }
+
+            if (e.key === "ArrowUp") {
+              e.preventDefault();
+              setActiveRoleIndex((prev) => (prev > 0 ? prev - 1 : prev));
+            }
+
+            if (e.key === "Enter") {
+              e.preventDefault();
+
+              if (activeRoleIndex >= 0) {
+                setTargetRole(filteredRoles[activeRoleIndex]);
+                setFilteredRoles([]);
+                setActiveRoleIndex(-1);
+              }
+            }
+          }}
         />
+
+        {isFocusedRole && filteredRoles.length > 0 && (
+          <div className="absolute z-50 bg-[#1a1a24] border border-white/10 rounded-xl overflow-hidden shadow-lg">
+            {filteredRoles.map((role, index) => (
+              <div
+                key={role}
+                onMouseEnter={() => setActiveRoleIndex(index)}
+                onClick={() => {
+                  setTargetRole(role);
+                  setFilteredRoles([]);
+                  setActiveRoleIndex(-1);
+                }}
+                className={`p-4 text-sm cursor-pointer transition-colors ${
+                  activeRoleIndex === index
+                    ? "bg-purple-600/30 text-white"
+                    : "text-gray-300 hover:bg-purple-600/20 hover:text-white"
+                }`}
+              >
+                {role}
+              </div>
+            ))}
+          </div>
+        )}
       </div>
 
       {/* Seniority */}
