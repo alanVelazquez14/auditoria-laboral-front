@@ -1,9 +1,55 @@
+"use client";
 import EmptyState from "@/components/EmptyState";
 import StatCard from "@/components/StatCard";
-import { ArrowRight, AlertTriangle } from "lucide-react";
+import { ArrowRight, AlertTriangle, Loader2 } from "lucide-react";
+import { useEffect, useState } from "react";
 
 export default function HomePage() {
-  const isProfileComplete = false;
+  const [user, setUser] = useState<any>(null);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const fetchUserData = async () => {
+      const userId = localStorage.getItem("userId");
+      const token = localStorage.getItem("token");
+
+      if (!userId || !token) {
+        setLoading(false);
+        return;
+      }
+
+      try {
+        const response = await fetch(
+          `${process.env.NEXT_PUBLIC_API_URL}/api/users/${userId}`,
+          {
+            headers: {
+              Authorization: `Bearer ${token}`,
+            },
+          },
+        );
+
+        if (response.ok) {
+          const data = await response.json();
+          setUser(data);
+        }
+      } catch (error) {
+        console.error("Error al cargar el perfil:", error);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchUserData();
+  }, []);
+
+  if (loading) {
+    return (
+      <div className="flex h-[60vh] w-full items-center justify-center">
+        <Loader2 className="animate-spin text-purple-500" size={32} />
+      </div>
+    );
+  }
+
   const recentActivity = [
     {
       company: "MercadoLibre",
@@ -27,7 +73,7 @@ export default function HomePage() {
 
   return (
     <div className="w-7xl space-y-8">
-      {!isProfileComplete ? (
+      {!user || user.profileCompleted === false ? (
         <EmptyState />
       ) : (
         <>
