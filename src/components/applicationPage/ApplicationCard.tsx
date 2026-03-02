@@ -1,4 +1,6 @@
+"use client";
 import { Building2, MapPin, Link2, FileText, Calendar } from "lucide-react";
+import { useState } from "react";
 
 export const ROLE_LABELS: Record<string, string> = {
   frontend: "Frontend Developer",
@@ -15,7 +17,43 @@ export const MODE_LABELS: Record<string, string> = {
   inperson: "Presencial",
 };
 
-export function ApplicationCard({ app }: { app: any }) {
+export function ApplicationCard({
+  app,
+  onStatusUpdate,
+}: {
+  app: any;
+  onStatusUpdate?: () => void;
+}) {
+  const [showMenu, setShowMenu] = useState(false);
+
+  const STATUS_OPTIONS = [
+    {
+      value: "APPLIED",
+      label: "Aplicada",
+      color: "bg-purple-500/10 text-purple-500",
+    },
+    {
+      value: "REVIEWING",
+      label: "En proceso",
+      color: "bg-blue-500/10 text-blue-500",
+    },
+    {
+      value: "INTERVIEW",
+      label: "Entrevista",
+      color: "bg-cyan-500/10 text-cyan-500",
+    },
+    {
+      value: "HIRED",
+      label: "Oferta",
+      color: "bg-green-500/10 text-green-500",
+    },
+    {
+      value: "REJECTED",
+      label: "Rechazada",
+      color: "bg-red-500/10 text-red-500",
+    },
+  ];
+
   const getStatusDisplay = (status: string) => {
     const map: Record<string, { label: string; color: string }> = {
       APPLIED: { label: "Aplicada", color: "bg-purple-500/10 text-purple-500" },
@@ -41,6 +79,27 @@ export function ApplicationCard({ app }: { app: any }) {
     return { color: "text-red-500", bg: "bg-red-500", percent };
   };
 
+  const handleStatusChange = async (newStatus: string) => {
+    const token = localStorage.getItem("token");
+    try {
+      const response = await fetch(
+        `${process.env.NEXT_PUBLIC_API_URL}/api/job-applications/${app.id}/status`,
+        {
+          method: "PATCH",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${token}`,
+          },
+          body: JSON.stringify({ status: newStatus }),
+        },
+      );
+      if (response.ok && onStatusUpdate) onStatusUpdate();
+      setShowMenu(false); // Cerrar al seleccionar
+    } catch (error) {
+      console.error("Error al actualizar:", error);
+    }
+  };
+
   const statusInfo = getStatusDisplay(app.status);
   const matchInfo = getMatchStyles(app.matchLevel || 1);
 
@@ -56,11 +115,44 @@ export function ApplicationCard({ app }: { app: any }) {
             {ROLE_LABELS[app.position] || app.position}
           </p>
         </div>
-        <span
-          className={`text-[10px] uppercase tracking-wider font-black px-3 py-1 rounded-full ${statusInfo.color}`}
-        >
-          {statusInfo.label}
-        </span>
+        <div className="relative">
+          <button
+            onClick={() => setShowMenu(!showMenu)}
+            className={`
+              text-[13px] 
+              px-3 py-1 rounded-full transition-all
+              ${statusInfo.color} hover:brightness-125
+            `}
+          >
+            {statusInfo.label}
+          </button>
+
+          {/* MENÚ DESPLEGABLE PERSONALIZADO */}
+          {showMenu && (
+            <>
+              <div
+                className="fixed inset-0 z-10"
+                onClick={() => setShowMenu(false)}
+              />
+
+              <div className="absolute right-0 mt-2 w-32 bg-[#1a1a24] border border-white/10 rounded-xl shadow-2xl z-20 overflow-hidden py-1">
+                {STATUS_OPTIONS.map((opt) => (
+                  <button
+                    key={opt.value}
+                    onClick={() => handleStatusChange(opt.value)}
+                    className={`
+                      w-full text-left px-3 py-2 text-[13px]
+                      hover:bg-white/5 transition-colors
+                      ${opt.color.replace("bg-", "text-").split(" ")[1]} 
+                    `}
+                  >
+                    {opt.label}
+                  </button>
+                ))}
+              </div>
+            </>
+          )}
+        </div>
       </div>
 
       <div className="flex flex-wrap gap-4 text-[11px] text-gray-500 mb-6">

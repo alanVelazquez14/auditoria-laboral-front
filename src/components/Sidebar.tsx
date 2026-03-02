@@ -72,7 +72,7 @@ export const Sidebar = () => {
         className="flex items-center gap-3 px-4 py-3 text-gray-500 hover:text-red-400 transition-colors mt-auto"
       >
         <LogOut size={20} />
-        <span className="font-medium">Cerrar sesión</span>
+        <span className="font-medium cursor-pointer">Cerrar sesión</span>
       </button>
     </aside>
   );

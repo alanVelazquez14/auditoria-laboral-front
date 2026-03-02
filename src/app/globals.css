@@ -33,3 +33,17 @@ body{
 html {
   scroll-behavior: smooth;
 }
+
+.clean-select {
+  appearance: none;
+  -webkit-appearance: none;
+  -moz-appearance: none;
+  background-image: none;
+}
+
+/* Estilo para las opciones dentro del desplegable */
+.clean-select option {
+  background-color: #111118;
+  color: white;
+  padding: 10px;
+}

@@ -135,6 +135,50 @@ export default function HomePage() {
     );
   }
 
+  const getFeedbackBanner = () => {
+    const { total, interviews, rejected, avgMatch, conversionRate } = stats;
+
+    // Caso: Sin suficientes datos
+    if (total < 3) return null;
+
+    // Caso: MAL (Imagen que pasaste)
+    if (conversionRate < 10 && total >= 5) {
+      return {
+        title: "Alta actividad, bajo impacto.",
+        message:
+          "Tus números muestran mucho movimiento pero poca conversión. Esto suele indicar un problema de estrategia, no de esfuerzo.",
+        type: "error",
+        icon: <AlertTriangle className="text-red-500" size={20} />,
+      };
+    }
+
+    // Caso: REGULAR
+    if (avgMatch < 60) {
+      return {
+        title: "Mejora tu afinidad.",
+        message:
+          "Estás aplicando a muchos roles, pero tu nivel de match es bajo. Intenta personalizar más tu CV para estas vacantes.",
+        type: "warning",
+        icon: <AlertCircle className="text-yellow-500" size={20} />,
+      };
+    }
+
+    // Caso: BIEN
+    if (conversionRate >= 20) {
+      return {
+        title: "¡Excelente estrategia!",
+        message:
+          "Tu tasa de conversión es alta. Estás apuntando a los roles correctos y tu perfil resulta atractivo para los reclutadores.",
+        type: "success",
+        icon: <Activity className="text-cyan-500" size={20} />,
+      };
+    }
+
+    return null;
+  };
+
+  const banner = getFeedbackBanner();
+
   return (
     <div className="max-w-7xl mx-10 space-y-8">
       {!user || user.profileCompleted === false ? (
@@ -148,17 +192,22 @@ export default function HomePage() {
           </header>
 
           {/* Banner de Alerta */}
-          {stats.total > 0 && stats.rejected > stats.interviews && (
-            <div className="bg-[#1a1111] border border-red-900/30 p-4 rounded-xl flex gap-4 items-start">
-              <AlertTriangle className="text-red-500 shrink-0" size={20} />
+          {banner && (
+            <div
+              className={`p-4 rounded-xl border flex gap-4 items-start transition-all ${
+                banner.type === "error"
+                  ? "bg-[#1a1111] border-red-900/30"
+                  : banner.type === "warning"
+                    ? "bg-[#1a1711] border-yellow-900/30"
+                    : "bg-[#111a1a] border-cyan-900/30"
+              }
+  `}
+            >
+              <div className="shrink-0 mt-0.5">{banner.icon}</div>
               <div>
-                <h3 className="text-white font-bold text-sm">
-                  Baja tasa de conversión detectada.
-                </h3>
-                <p className="text-gray-400 text-xs mt-1">
-                  Tienes {stats.total} postulaciones y {stats.rejected}{" "}
-                  rechazos. Considera optimizar tu CV para roles de{" "}
-                  {recentActivity[0]?.role}.
+                <h3 className="text-white font-bold text-sm">{banner.title}</h3>
+                <p className="text-gray-400 text-xs mt-1 leading-relaxed">
+                  {banner.message}
                 </p>
               </div>
             </div>
@@ -203,9 +252,9 @@ export default function HomePage() {
             />
           </div>
 
-          <button className="bg-purple-600 hover:bg-purple-700 text-white px-6 py-3 rounded-xl font-medium flex items-center gap-2 transition-all w-fit text-sm">
+          <Link href="/diagnostic" className="bg-purple-600 hover:bg-purple-700 text-white px-6 py-3 rounded-xl font-bold flex items-center gap-2 transition-all w-fit text-sm cursor-pointer">
             Ver diagnóstico completo <ArrowRight size={16} />
-          </button>
+          </Link>
 
           {/* Actividad Reciente */}
           <div className="bg-[#111118] border border-white/5 rounded-2xl p-6">
