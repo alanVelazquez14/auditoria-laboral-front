@@ -272,10 +272,7 @@ export default function ProfileWizard() {
     const userId = localStorage.getItem("userId");
     const token = localStorage.getItem("token");
 
-    if (!userId || !token) {
-      alert("No se encontró el usuario logueado.");
-      return;
-    }
+    if (!userId || !token) return;
 
     const roleMapping: Record<string, string> = {
       frontend: "frontend",
@@ -295,51 +292,71 @@ export default function ProfileWizard() {
     };
 
     try {
-      const finalCvUrl = "https://mi-cv.com/archivo-subido.pdf"; // temporal
-
-      const { linkStatus, portfolioLinks, ...restOfFormData } = formData;
-
-      const rawRole = formData.targetRole.trim().toLowerCase();
-      const finalRole = roleMapping[rawRole] || "fullstack";
-
-      const payload = {
-        ...restOfFormData,
+      const {
+        linkStatus,
         portfolioLinks,
-        cvUrl: "https://mi-cv.com/archivo-subido.pdf",
-        cvType: "file",
-        targetRole: finalRole,
-        seniority: seniorityMap[formData.seniority.toLowerCase()] || "jr",
-      };
+        targetRole,
+        seniority,
+        stackMatchesCV,
+        consentToShareData,
+        ...restOfFormData
+      } = formData;
 
-      const validRoles = [
-        "frontend",
-        "backend",
-        "fullstack",
-        "mobile",
-        "devops",
-        "data",
-      ];
-      if (!validRoles.includes(payload.targetRole)) {
-        console.error("TargetRole inválido:", payload.targetRole);
-      }
+      const formDataToSend = new FormData();
+
+      if (cvFile) formDataToSend.append("cvFile", cvFile);
+
+      const finalRole =
+        roleMapping[targetRole.trim().toLowerCase()] || "fullstack";
+      const finalSeniority =
+        seniorityMap[seniority.trim().toLowerCase()] || "jr";
+
+      formDataToSend.append("targetRole", finalRole);
+      formDataToSend.append("seniority", finalSeniority);
+      formDataToSend.append("cvType", "file");
+
+      formDataToSend.append("portfolio", portfolioLinks.portfolio);
+      formDataToSend.append("linkedin", portfolioLinks.linkedin);
+      formDataToSend.append("github", portfolioLinks.github);
+
+      formDataToSend.append("stackMatchesCV", String(formData.stackMatchesCV));
+
+      formDataToSend.append(
+        "consentToShareData",
+        String(formData.consentToShareData),
+      );
+
+      Object.entries(restOfFormData).forEach(([key, value]) => {
+        if (value !== undefined && value !== null) {
+          if (Array.isArray(value)) {
+            value.forEach((v) => formDataToSend.append(`${key}[]`, v));
+          } else {
+            formDataToSend.append(key, value.toString());
+          }
+        }
+      });
 
       const response = await fetch(
         `${process.env.NEXT_PUBLIC_API_URL}/api/users/${userId}/profile`,
         {
           method: "PATCH",
-          headers: {
-            "Content-Type": "application/json",
-            Authorization: `Bearer ${token}`,
-          },
-          body: JSON.stringify(payload),
+          headers: { Authorization: `Bearer ${token}` },
+          body: formDataToSend,
         },
       );
 
+      const result = await response.json();
+
       if (response.ok) {
-        await response.json();
         alert("¡Perfil completado con éxito!");
+        window.location.href = "/home";
       } else {
-        await response.json();
+        console.error("Errores del backend:", result.message);
+        throw new Error(
+          Array.isArray(result.message)
+            ? result.message.join(" | ")
+            : result.message,
+        );
       }
     } catch (error: any) {
       alert("Hubo un error al guardar tus datos: " + error.message);
