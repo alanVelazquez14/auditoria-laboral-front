@@ -1,6 +1,6 @@
 "use client";
 import { useEffect, useState } from "react";
-import { Plus, Search } from "lucide-react";
+import { Plus } from "lucide-react";
 import { ApplicationCard } from "@/components/applicationPage/ApplicationCard";
 import NewApplicationModal from "@/components/applicationPage/NewApplicationModal";
 
@@ -26,7 +26,7 @@ export default function ApplicationsPage() {
   }, []);
 
   return (
-    <div className="max-w-7xl mx-auto space-y-8">
+    <div className="max-w-7xl mx-10 space-y-8">
       <header className="flex justify-between items-end">
         <div>
           <h1 className="text-3xl font-bold text-white mb-2">Postulaciones</h1>
@@ -34,11 +34,16 @@ export default function ApplicationsPage() {
         </div>
         <button
           onClick={() => setIsModalOpen(true)}
-          className="bg-purple-600 hover:bg-purple-700 text-white px-5 py-2.5 rounded-xl font-bold flex items-center gap-2 transition-all shadow-lg shadow-purple-600/20"
+          className="bg-purple-600 hover:bg-purple-700 text-white px-5 py-2.5 rounded-xl font-bold flex items-center gap-2 transition-all shadow-lg shadow-purple-600/20 cursor-pointer"
         >
           <Plus size={18} /> Nueva
         </button>
       </header>
+      <div className="bg-[#111118] border border-white/5 px-5 py-2 rounded-2xl italic text-gray-500 text-sm">
+        <p className="text-[15px] text-gray-500">
+          Si no registras tus postulaciones, el sistema no puede ayudarte.
+        </p>
+      </div>
 
       {/* Filtros */}
       <div className="flex gap-2 overflow-x-auto pb-2 scrollbar-hide">

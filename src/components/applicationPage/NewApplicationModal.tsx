@@ -11,11 +11,10 @@ export default function NewApplicationModal({
 
   const [formData, setFormData] = useState({
     companyName: "",
-    position: "",
     roleCategory: "",
     mode: "",
     jobUrl: "",
-    matchLevel: 3,
+    matchLevel: 1,
     message: "",
   });
 
@@ -28,7 +27,6 @@ export default function NewApplicationModal({
 
     const rawPayload: any = {
       companyName: formData.companyName.trim(),
-      position: formData.position.trim(),
       matchLevel: Number(formData.matchLevel),
     };
 
@@ -115,7 +113,7 @@ export default function NewApplicationModal({
           </button>
         </div>
 
-        <form onSubmit={handleSubmit} className="space-y-5">
+        <form onSubmit={handleSubmit} className="space-y-4">
           {/* Nombre de Empresa */}
           <input
             required
@@ -127,31 +125,36 @@ export default function NewApplicationModal({
             }
           />
 
-          {/* Posición / Rol */}
-          <div className="grid grid-cols-3 gap-2">
-            {[
-              { id: "frontend", label: "Frontend" },
-              { id: "backend", label: "Backend" },
-              { id: "fullstack", label: "Fullstack" },
-              { id: "mobile", label: "Mobile" },
-              { id: "devops", label: "DevOps" },
-              { id: "data", label: "Data" },
-            ].map((role) => (
-              <button
-                key={role.id}
-                type="button"
-                onClick={() =>
-                  setFormData({ ...formData, roleCategory: role.id })
-                }
-                className={`py-2 rounded-lg text-xs font-bold uppercase transition-all ${
-                  formData.roleCategory === role.id
-                    ? "bg-purple-600 text-white"
-                    : "bg-white/5 text-gray-500"
-                }`}
-              >
-                {role.label}
-              </button>
-            ))}
+          {/* Categoría (Role Category) */}
+          <div className="space-y-2">
+            <span className="text-[10px] text-gray-500 font-bold uppercase ml-1">
+              Categoría
+            </span>
+            <div className="grid grid-cols-3 gap-2">
+              {[
+                { id: "frontend", label: "Frontend" },
+                { id: "backend", label: "Backend" },
+                { id: "fullstack", label: "Fullstack" },
+                { id: "mobile", label: "Mobile" },
+                { id: "devops", label: "DevOps" },
+                { id: "data", label: "Data" },
+              ].map((role) => (
+                <button
+                  key={role.id}
+                  type="button"
+                  onClick={() =>
+                    setFormData({ ...formData, roleCategory: role.id })
+                  }
+                  className={`py-2 rounded-lg text-[10px] font-bold uppercase transition-all border ${
+                    formData.roleCategory === role.id
+                      ? "bg-purple-600 text-white border-purple-500"
+                      : "bg-white/5 text-gray-500 border-transparent hover:border-white/10"
+                  }`}
+                >
+                  {role.label}
+                </button>
+              ))}
+            </div>
           </div>
 
           {/* Modalidad (Mode) */}
@@ -205,7 +208,7 @@ export default function NewApplicationModal({
             <input
               type="range"
               min="1"
-              max="5"
+              max="10"
               step="1"
               className="w-full h-1.5 bg-white/10 rounded-lg appearance-none cursor-pointer accent-purple-500"
               value={formData.matchLevel}
