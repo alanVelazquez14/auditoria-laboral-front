@@ -1,5 +1,6 @@
 "use client";
 import { ImpactCard } from "@/components/supportPage/ImpactCard";
+import { PayPalButton } from "@/components/supportPage/PayPalButton";
 import { TransparencyItem } from "@/components/supportPage/TransparencyItem";
 import {
   Heart,
@@ -9,9 +10,11 @@ import {
   Lock,
   ChevronDown,
 } from "lucide-react";
+import { useRouter } from "next/navigation";
 import { useState } from "react";
 
 export default function SupportPage() {
+  const router = useRouter();
   const [selectedAmount, setSelectedAmount] = useState<number | string | null>(
     1000,
   );
@@ -31,8 +34,28 @@ export default function SupportPage() {
     setIsCustom(true);
   };
 
+  const handleMPPayment = async () => {
+    if (!selectedAmount || Number(selectedAmount) <= 0) return;
+
+    try {
+      const response = await fetch(
+        `${process.env.NEXT_PUBLIC_API_URL}/api/checkout`,
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ amount: Number(selectedAmount) }),
+        },
+      );
+
+      const data = await response.json();
+      if (data.url) window.location.href = data.url;
+    } catch (error) {
+      console.error("Error en Mercado Pago:", error);
+    }
+  };
+
   return (
-    <div className="text-white flex flex-col items-center py-16 px-4">
+    <div className="text-white flex flex-col items-center py-5">
       {/* Header */}
       <div className="flex flex-col items-center max-w-7xl mb-12">
         <div className="w-16 h-16 bg-card-bg border border-white/5 rounded-2xl flex items-center justify-center mb-6 shadow-xl">
@@ -48,7 +71,7 @@ export default function SupportPage() {
       </div>
 
       {/* Impact Stats */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4 w-full max-w-4xl mb-16">
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4 w-full max-w-7xl mb-16">
         <ImpactCard
           icon={Users}
           value="1.2K+"
@@ -59,7 +82,7 @@ export default function SupportPage() {
       </div>
 
       {/* Payment Section */}
-      <div className="w-full max-w-4xl grid grid-cols-1 md:grid-cols-2 gap-12">
+      <div className="w-full max-w-7xl grid grid-cols-1 md:grid-cols-2 gap-12">
         {/* Left: Amount Selector */}
         <div className="space-y-6">
           <h3 className="text-[10px] font-black text-gray-500 uppercase">
@@ -134,13 +157,24 @@ export default function SupportPage() {
         {/* Right: Checkout & Transparency */}
         <div className="space-y-8">
           <div className="space-y-4">
-            <button className="w-full bg-brand-purple hover:bg-[#6d28d9] text-white py-4 rounded-2xl font-bold flex items-center justify-center gap-2 transition-all shadow-lg shadow-purple-500/20 active:scale-[0.98]">
-              <Heart size={18} className="fill-white" />
-              Apoyar con{" "}
-              {selectedAmount
-                ? `${currency === "ARS" ? "$" : "USD"}${Number(selectedAmount).toLocaleString()}`
-                : "..."}
-            </button>
+            {currency === "ARS" ? (
+              // BOTÓN MERCADO PAGO
+              <button
+                onClick={handleMPPayment}
+                className="w-full bg-brand-purple hover:bg-[#6d28d9] text-white py-4 rounded-2xl font-bold flex items-center justify-center gap-2 transition-all shadow-lg shadow-purple-500/20 active:scale-[0.98]"
+              >
+                <Heart size={18} className="fill-white" />
+                Apoyar con ${Number(selectedAmount).toLocaleString()}
+              </button>
+            ) : (
+              // BOTÓN PAYPAL (Aparece solo si elige USD)
+              <div className="w-full">
+                <PayPalButton
+                  amount={Number(selectedAmount)}
+                  onSuccess={() => router.push("/support/success")}
+                />
+              </div>
+            )}
             <p className="flex items-center justify-center gap-2 text-xs text-gray-500">
               <Lock size={12} /> Pago seguro. Tu aporte es anónimo y voluntario.
             </p>
