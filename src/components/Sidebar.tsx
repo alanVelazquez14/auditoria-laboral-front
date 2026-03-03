@@ -9,6 +9,7 @@ import {
   User,
   LogOut,
   Zap,
+  Heart
 } from "lucide-react";
 
 const menuItems = [
@@ -17,6 +18,7 @@ const menuItems = [
   { name: "Diagnóstico", icon: Activity, href: "/diagnostic" },
   { name: "Score", icon: BarChart3, href: "/score" },
   { name: "Perfil", icon: User, href: "/profile" },
+  { name: "Apoyar el proyecto", icon: Heart, href: "/support" },
 ];
 
 export const Sidebar = () => {

@@ -94,7 +94,7 @@ export function ApplicationCard({
         },
       );
       if (response.ok && onStatusUpdate) onStatusUpdate();
-      setShowMenu(false); // Cerrar al seleccionar
+      setShowMenu(false);
     } catch (error) {
       console.error("Error al actualizar:", error);
     }
