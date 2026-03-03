@@ -62,8 +62,6 @@ export default function HomePage() {
             : appsData.data || [];
           setApplications(finalApps);
         }
-        console.log("userRes status:", userRes.status);
-        console.log("appsRes status:", appsRes.status);
       } catch (error) {
         console.error("Error al cargar datos:", error);
       } finally {
@@ -76,15 +74,17 @@ export default function HomePage() {
 
   const stats = useMemo(() => {
     const total = applications.length;
-    const interviews = applications.filter(
-      (app) =>
-        app.status?.toUpperCase() === "INTERVIEWING" ||
-        app.status?.toUpperCase() === "ENTREVISTA",
-    ).length;
+    const interviews = applications.filter((app) => {
+      const isCurrentlyInterview = app.status?.toUpperCase() === "INTERVIEW";
+      const hadInterviewInHistory = app.statusHistory?.some(
+        (h: any) => h.newStatus?.toUpperCase() === "INTERVIEW",
+      );
+
+      return isCurrentlyInterview || hadInterviewInHistory;
+    }).length;
+
     const rejected = applications.filter(
-      (app) =>
-        app.status?.toUpperCase() === "REJECTED" ||
-        app.status?.toUpperCase() === "RECHAZADA",
+      (app) => app.status?.toUpperCase() === "REJECTED",
     ).length;
 
     const sumMatch = applications.reduce(
@@ -107,24 +107,45 @@ export default function HomePage() {
   }, [applications]);
 
   const recentActivity = useMemo(() => {
-    return applications.slice(0, 3).map((app) => ({
-      company: app.companyName || "Empresa desconocida",
-      role: ROLE_LABELS[app.position] || app.position || "Puesto no definido",
-      status:
-        app.status?.toUpperCase() === "APPLIED"
-          ? "Aplicada"
-          : app.status?.toUpperCase() === "INTERVIEWING"
-            ? "Entrevista"
-            : app.status?.toUpperCase() === "REJECTED"
-              ? "Rechazada"
-              : "Pendiente",
-      statusColor:
-        app.status?.toUpperCase() === "REJECTED"
-          ? "text-red-500"
-          : app.status?.toUpperCase() === "INTERVIEWING"
-            ? "text-cyan-500"
-            : "text-gray-400",
-    }));
+    return applications.slice(0, 3).map((app) => {
+      const statusUpper = app.status?.toUpperCase();
+
+      let label = "Pendiente";
+      let color = "text-gray-400";
+
+      switch (statusUpper) {
+        case "INTERVIEW":
+          label = "Entrevista";
+          color = "text-cyan-500";
+          break;
+        case "REJECTED":
+          label = "Rechazada";
+          color = "text-red-500";
+          break;
+        case "REVIEWING":
+          label = "En proceso";
+          color = "text-blue-500";
+          break;
+        case "APPLIED":
+          label = "Aplicada";
+          color = "text-purple-500";
+          break;
+        case "HIRED":
+          label = "Oferta";
+          color = "text-green-500";
+          break;
+        default:
+          label = app.status || "Pendiente";
+          color = "text-gray-400";
+      }
+
+      return {
+        company: app.companyName || "Empresa desconocida",
+        role: ROLE_LABELS[app.position] || app.position || "Puesto no definido",
+        status: label,
+        statusColor: color,
+      };
+    });
   }, [applications]);
 
   if (loading) {
@@ -252,7 +273,10 @@ export default function HomePage() {
             />
           </div>
 
-          <Link href="/diagnostic" className="bg-purple-600 hover:bg-purple-700 text-white px-6 py-3 rounded-xl font-bold flex items-center gap-2 transition-all w-fit text-sm cursor-pointer">
+          <Link
+            href="/diagnostic"
+            className="bg-purple-600 hover:bg-purple-700 text-white px-6 py-3 rounded-xl font-bold flex items-center gap-2 transition-all w-fit text-sm cursor-pointer"
+          >
             Ver diagnóstico completo <ArrowRight size={16} />
           </Link>
 

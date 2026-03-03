@@ -1,6 +1,11 @@
 "use client";
 import { Building2, MapPin, Link2, FileText, Calendar } from "lucide-react";
-import { useState } from "react";
+import { useEffect, useState } from "react";
+
+interface ApplicationCardProps {
+  app: any;
+  onStatusUpdate: (id: string, newStatus: string) => void;
+}
 
 export const ROLE_LABELS: Record<string, string> = {
   frontend: "Frontend Developer",
@@ -22,9 +27,10 @@ export function ApplicationCard({
   onStatusUpdate,
 }: {
   app: any;
-  onStatusUpdate?: () => void;
+  onStatusUpdate?: (id: string, newStatus: string) => void;
 }) {
   const [showMenu, setShowMenu] = useState(false);
+  const [localStatus, setLocalStatus] = useState(app.status);
 
   const STATUS_OPTIONS = [
     {
@@ -79,28 +85,18 @@ export function ApplicationCard({
     return { color: "text-red-500", bg: "bg-red-500", percent };
   };
 
-  const handleStatusChange = async (newStatus: string) => {
-    const token = localStorage.getItem("token");
-    try {
-      const response = await fetch(
-        `${process.env.NEXT_PUBLIC_API_URL}/api/job-applications/${app.id}/status`,
-        {
-          method: "PATCH",
-          headers: {
-            "Content-Type": "application/json",
-            Authorization: `Bearer ${token}`,
-          },
-          body: JSON.stringify({ status: newStatus }),
-        },
-      );
-      if (response.ok && onStatusUpdate) onStatusUpdate();
-      setShowMenu(false);
-    } catch (error) {
-      console.error("Error al actualizar:", error);
+  const handleStatusChange = (newStatus: string) => {
+    setShowMenu(false);
+    if (onStatusUpdate) {
+      onStatusUpdate(app.id, newStatus);
     }
   };
 
-  const statusInfo = getStatusDisplay(app.status);
+  useEffect(() => {
+    setLocalStatus(app.status);
+  }, [app.status]);
+
+  const statusInfo = getStatusDisplay(localStatus);
   const matchInfo = getMatchStyles(app.matchLevel || 1);
 
   return (
@@ -119,7 +115,7 @@ export function ApplicationCard({
           <button
             onClick={() => setShowMenu(!showMenu)}
             className={`
-              text-[13px] 
+              text-[13px] cursor-pointer
               px-3 py-1 rounded-full transition-all
               ${statusInfo.color} hover:brightness-125
             `}
@@ -141,7 +137,7 @@ export function ApplicationCard({
                     key={opt.value}
                     onClick={() => handleStatusChange(opt.value)}
                     className={`
-                      w-full text-left px-3 py-2 text-[13px]
+                      w-full text-left px-3 py-2 text-[13px] cursor-pointer
                       hover:bg-white/5 transition-colors
                       ${opt.color.replace("bg-", "text-").split(" ")[1]} 
                     `}
