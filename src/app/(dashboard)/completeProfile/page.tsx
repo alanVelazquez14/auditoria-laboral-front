@@ -1,10 +1,12 @@
-
+import PageTransition from "@/components/PageTransition";
 import ProfileWizard from "@/components/profile-wizard/ProfileWizard";
 
 export default function CompleteProfilePage() {
   return (
-    <main className="flex">
-      <ProfileWizard />
-    </main>
+    <PageTransition>
+      <main className="flex">
+        <ProfileWizard />
+      </main>
+    </PageTransition>
   );
 }

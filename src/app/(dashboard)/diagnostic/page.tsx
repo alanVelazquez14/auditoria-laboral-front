@@ -2,17 +2,10 @@
 import { useDiagnostics } from "@/hooks/useDiagnostics";
 import { useParams } from "next/navigation";
 import { useState } from "react";
-// Importa iconos de Lucide (si los tienes) o usa emojis/svg
-import {
-  AlertCircle,
-  CheckCircle2,
-  XCircle,
-  ChevronDown,
-  BarChart3,
-  Target,
-  MapPin,
-  Gauge,
-} from "lucide-react";
+import { CheckCircle2, XCircle, ChevronDown, Rocket } from "lucide-react";
+import { StatCard } from "@/components/diagnosticPage/StatCard";
+import { getIcon, getIconColor } from "@/components/diagnosticPage/GetIcon";
+import PageTransition from "@/components/PageTransition";
 
 export interface Diagnostic {
   id: string;
@@ -26,14 +19,13 @@ export interface Diagnostic {
 export interface DiagnosticData {
   score: any;
   diagnostics: Diagnostic[];
-
+  totalApplications: number;
   lastUpdate: string;
 }
 
 export default function DiagnosticsPage() {
   const params = useParams();
-  const userId =
-    (params.userId as string) || "8c638037-fce4-41a1-9b12-142e5e9a0955";
+  const userId = params.userId as string;
   const { data, loading, generateNew } = useDiagnostics(userId);
   const [expandedId, setExpandedId] = useState<string | null>(null);
 
@@ -47,158 +39,142 @@ export default function DiagnosticsPage() {
 
   const diagnostics = data?.diagnostics || [];
 
-  // Lógica para los contadores superiores
-  const highPriority = diagnostics.filter((d) => d.priority === "high").length;
-  const mediumPriority = diagnostics.filter(
-    (d) => d.priority === "medium",
-  ).length;
-  const totalDetected = diagnostics.length;
-
   return (
-    <div className="p-8 min-h-screen text-white font-sans">
-      <header className="flex justify-between items-start mb-10">
-        <div>
-          <h1 className="text-3xl font-bold tracking-tight">Diagnóstico</h1>
-          <p className="text-gray-400 mt-1">
-            Análisis automático basado en tus patrones de postulación
-          </p>
-        </div>
-        <button
-          onClick={generateNew}
-          className="bg-brand-purple hover:bg-[#6d28d9] px-6 py-2.5 rounded-lg font-semibold transition-all shadow-lg shadow-purple-500/20 active:scale-95"
-        >
-          Re-evaluar Perfil
-        </button>
-      </header>
-
-      {/* --- STATS GRID --- */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-10">
-        <StatCard
-          label="Alta prioridad"
-          value={highPriority}
-          color="border-red-500/30 text-red-500"
-        />
-        <StatCard
-          label="Media prioridad"
-          value={mediumPriority}
-          color="border-yellow-500/30 text-yellow-500"
-        />
-        <StatCard
-          label="Total detectados"
-          value={totalDetected}
-          color="border-cyan-500/30 text-cyan-400"
-        />
-      </div>
-
-      {/* --- DIAGNOSTICS LIST (Accordions) --- */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-        {diagnostics.map((diag) => (
-          <div
-            key={diag.id}
-            className={`transition-all duration-300 rounded-xl border ${
-              expandedId === diag.id
-                ? "bg-[#1a1a23] border-brand-purple/50"
-                : "bg-card-bg border-gray-800"
-            }`}
-          >
-            <button
-              onClick={() =>
-                setExpandedId(expandedId === diag.id ? null : diag.id)
-              }
-              className="w-full p-5 flex items-center justify-between text-left"
-            >
-              <div className="flex items-center gap-4">
-                <div
-                  className={`p-2 rounded-lg ${getIconColor(diag.issue)} bg-opacity-10`}
-                >
-                  {getIcon(diag.issue)}
-                </div>
-                <div>
-                  <h3 className="font-semibold text-gray-100">
-                    {diag.issue.replace(/_/g, " ")}
-                  </h3>
-                  <span
-                    className={`text-[10px] font-bold uppercase tracking-wider ${diag.priority === "high" ? "text-red-500" : "text-yellow-500"}`}
-                  >
-                    Prioridad {diag.priority === "high" ? "Alta" : "Media"}
-                  </span>
-                </div>
-              </div>
-              <ChevronDown
-                className={`w-5 h-5 text-gray-500 transition-transform ${expandedId === diag.id ? "rotate-180" : ""}`}
-              />
-            </button>
-
-            {expandedId === diag.id && (
-              <div className="px-5 pb-6 space-y-4 animate-in fade-in slide-in-from-top-2">
-                <div className="h-px bg-gray-800 w-full mb-4" />
-                <div className="flex gap-3 items-start">
-                  <CheckCircle2 className="w-5 h-5 text-green-500 shrink-0 mt-0.5" />
-                  <div>
-                    <p className="text-xs text-gray-400 uppercase font-bold mb-1">
-                      Recomendación
-                    </p>
-                    <p className="text-sm text-gray-200">
-                      {diag.recommendedAction}
-                    </p>
-                  </div>
-                </div>
-                <div className="flex gap-3 items-start">
-                  <XCircle className="w-5 h-5 text-red-500 shrink-0 mt-0.5" />
-                  <div>
-                    <p className="text-xs text-gray-400 uppercase font-bold mb-1">
-                      Evitar
-                    </p>
-                    <p className="text-sm text-gray-200">
-                      {diag.notRecommendedAction}
-                    </p>
-                  </div>
-                </div>
-              </div>
-            )}
+    <PageTransition>
+      <div className="p-8 min-h-screen text-white font-sans">
+        <header className="flex justify-between items-start mb-10">
+          <div>
+            <h1 className="text-3xl font-bold tracking-tight">Diagnóstico</h1>
+            <p className="text-gray-400 mt-1">
+              Análisis automático basado en tus patrones de postulación
+            </p>
           </div>
-        ))}
+          <button
+            onClick={generateNew}
+            className="bg-brand-purple hover:bg-[#6d28d9] px-6 py-2.5 rounded-lg font-semibold transition-all shadow-lg shadow-purple-500/20 active:scale-95"
+          >
+            Re-evaluar Perfil
+          </button>
+        </header>
+
+        {/* --- STATS GRID --- */}
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-10">
+          <StatCard
+            label="Alta prioridad"
+            value={diagnostics.filter((d) => d.priority === "high").length}
+            color="border-red-500/30 text-red-500"
+          />
+          <StatCard
+            label="Media prioridad"
+            value={diagnostics.filter((d) => d.priority === "medium").length}
+            color="border-yellow-500/30 text-yellow-500"
+          />
+          <StatCard
+            label="Total detectados"
+            value={diagnostics.length}
+            color="border-cyan-500/30 text-cyan-400"
+          />
+        </div>
+
+        {/* --- DIAGNOSTICS LIST (Accordions) --- */}
+        {diagnostics.length === 0 ? (
+          <div className="bg-card-bg border border-dashed border-gray-800 rounded-2xl p-20 text-center flex flex-col items-center">
+            <div className="bg-brand-purple/10 p-5 rounded-full mb-6">
+              <Rocket className="text-brand-purple w-10 h-10" />
+            </div>
+            <h2 className="text-xl font-bold mb-2">¡Todo despejado!</h2>
+            <p className="text-gray-400 max-w-md mb-8">
+              No hemos detectado problemas críticos en tu perfil. Sigue
+              postulando para que podamos realizar un análisis más profundo.
+            </p>
+            <button
+              onClick={() => (window.location.href = "/applications")}
+              className="text-brand-purple border border-brand-purple/30 px-6 py-2 rounded-full hover:bg-brand-purple/10 transition cursor-pointer active:scale-95"
+            >
+              Cargar nuevas postulaciones
+            </button>
+          </div>
+        ) : (
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+            {diagnostics.map((diag) => (
+              <div
+                key={diag.id}
+                className={`transition-all duration-300 rounded-xl border ${
+                  expandedId === diag.id
+                    ? "bg-[#1a1a23] border-brand-purple/50 shadow-lg shadow-purple-500/5"
+                    : "bg-card-bg border-gray-800 hover:border-gray-700"
+                }`}
+              >
+                <button
+                  onClick={() =>
+                    setExpandedId(expandedId === diag.id ? null : diag.id)
+                  }
+                  className="w-full p-5 flex items-center justify-between text-left"
+                >
+                  <div className="flex items-center gap-4">
+                    <div
+                      className={`p-2 rounded-lg ${getIconColor(diag.issue)} bg-opacity-10`}
+                    >
+                      {getIcon(diag.issue)}
+                    </div>
+                    <div>
+                      <h3 className="font-semibold text-gray-100 leading-tight">
+                        {diag.issue.replace(/_/g, " ")}
+                      </h3>
+                      <span
+                        className={`text-[10px] font-bold uppercase tracking-widest ${
+                          diag.priority === "high"
+                            ? "text-red-500"
+                            : "text-yellow-500"
+                        }`}
+                      >
+                        {diag.priority === "high"
+                          ? "Crítico"
+                          : "Mejora Sugerida"}
+                      </span>
+                    </div>
+                  </div>
+                  <ChevronDown
+                    className={`w-5 h-5 text-gray-500 transition-transform duration-300 ${
+                      expandedId === diag.id
+                        ? "rotate-180 text-brand-purple"
+                        : ""
+                    }`}
+                  />
+                </button>
+
+                {expandedId === diag.id && (
+                  <div className="px-5 pb-6 space-y-4 animate-in fade-in slide-in-from-top-2">
+                    <div className="h-px bg-gray-800/50 w-full mb-4" />
+                    <div className="flex gap-4 items-start bg-green-500/5 p-3 rounded-lg border border-green-500/10">
+                      <CheckCircle2 className="w-5 h-5 text-green-500 shrink-0 mt-0.5" />
+                      <div>
+                        <p className="text-xs text-green-500/70 uppercase font-bold mb-0.5">
+                          Recomendación
+                        </p>
+                        <p className="text-sm text-gray-200">
+                          {diag.recommendedAction}
+                        </p>
+                      </div>
+                    </div>
+                    <div className="flex gap-4 items-start bg-red-500/5 p-3 rounded-lg border border-red-500/10">
+                      <XCircle className="w-5 h-5 text-red-500 shrink-0 mt-0.5" />
+                      <div>
+                        <p className="text-xs text-red-500/70 uppercase font-bold mb-0.5">
+                          Evitar
+                        </p>
+                        <p className="text-sm text-gray-200">
+                          {diag.notRecommendedAction}
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+                )}
+              </div>
+            ))}
+          </div>
+        )}
       </div>
-    </div>
+    </PageTransition>
   );
-}
-
-// --- HELPER COMPONENTS ---
-
-function StatCard({
-  label,
-  value,
-  color,
-}: {
-  label: string;
-  value: number;
-  color: string;
-}) {
-  return (
-    <div
-      className={`bg-card-bg border ${color} p-6 rounded-xl flex flex-col items-center justify-center text-center shadow-inner`}
-    >
-      <span className="text-4xl font-bold mb-1">{value}</span>
-      <span className="text-xs uppercase tracking-widest opacity-70 font-medium">
-        {label}
-      </span>
-    </div>
-  );
-}
-
-function getIcon(issue: string) {
-  if (issue.includes("ATS"))
-    return <BarChart3 className="w-5 h-5 text-red-400" />;
-  if (issue.includes("SENIORITY"))
-    return <Gauge className="w-5 h-5 text-red-400" />;
-  if (issue.includes("MATCH"))
-    return <Target className="w-5 h-5 text-yellow-400" />;
-  if (issue.includes("GEOGRAFICA"))
-    return <MapPin className="w-5 h-5 text-yellow-400" />;
-  return <AlertCircle className="w-5 h-5 text-gray-400" />;
-}
-
-function getIconColor(issue: string) {
-  if (issue.includes("ATS") || issue.includes("SENIORITY")) return "bg-red-500";
-  return "bg-yellow-500";
 }

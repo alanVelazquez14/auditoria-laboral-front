@@ -12,6 +12,7 @@ import {
 } from "lucide-react";
 import { useEffect, useState, useMemo } from "react";
 import Link from "next/link";
+import PageTransition from "@/components/PageTransition";
 
 const ROLE_LABELS: Record<string, string> = {
   frontend: "Frontend Developer",
@@ -201,126 +202,131 @@ export default function HomePage() {
   const banner = getFeedbackBanner();
 
   return (
-    <div className="max-w-7xl mx-10 space-y-8">
-      {!user || user.profileCompleted === false ? (
-        <EmptyState />
-      ) : (
-        <>
-          <header>
-            <h1 className="text-3xl font-bold text-white">
-              Hola, {user.fullName?.split(" ")[0] || "Usuario"}
-            </h1>
-          </header>
+    <PageTransition>
+      <div className="max-w-7xl mx-10 space-y-8">
+        {!user || user.profileCompleted === false ? (
+          <EmptyState />
+        ) : (
+          <>
+            <header>
+              <h1 className="text-3xl font-bold text-white">
+                Hola, {user.fullName?.split(" ")[0] || "Usuario"}
+              </h1>
+            </header>
 
-          {/* Banner de Alerta */}
-          {banner && (
-            <div
-              className={`p-4 rounded-xl border flex gap-4 items-start transition-all ${
-                banner.type === "error"
-                  ? "bg-[#1a1111] border-red-900/30"
-                  : banner.type === "warning"
-                    ? "bg-[#1a1711] border-yellow-900/30"
-                    : "bg-[#111a1a] border-cyan-900/30"
-              }
-  `}
-            >
-              <div className="shrink-0 mt-0.5">{banner.icon}</div>
-              <div>
-                <h3 className="text-white font-bold text-sm">{banner.title}</h3>
-                <p className="text-gray-400 text-xs mt-1 leading-relaxed">
-                  {banner.message}
-                </p>
-              </div>
-            </div>
-          )}
-
-          {/* Grid de Stats */}
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-            <StatCard
-              label="Postulaciones"
-              value={stats.total.toString()}
-              color="text-purple-500"
-              icon={BarChart3}
-              subtext="últimos 30 días"
-            />
-            <StatCard
-              label="Entrevistas"
-              value={stats.interviews.toString()}
-              color="text-cyan-400"
-              icon={Activity}
-              subtext={`${stats.conversionRate}% de conversión`}
-              subtextColor="text-cyan-500/70"
-            />
-            <StatCard
-              label="Rechazos"
-              value={stats.rejected.toString()}
-              color="text-red-400"
-              icon={TrendingDown}
-              subtext={`${stats.rejectionRate}% del total`}
-              subtextColor="text-red-500/70"
-            />
-            <StatCard
-              label="Match promedio"
-              value={`${stats.avgMatch}%`}
-              color="text-yellow-500"
-              icon={AlertCircle}
-              subtext={
-                stats.avgMatch < 60
-                  ? "Por debajo del ideal"
-                  : "Buen fit general"
-              }
-              subtextColor="text-yellow-600/70"
-            />
-          </div>
-
-          <Link
-            href="/diagnostic"
-            className="bg-purple-600 hover:bg-purple-700 text-white px-6 py-3 rounded-xl font-bold flex items-center gap-2 transition-all w-fit text-sm cursor-pointer"
-          >
-            Ver diagnóstico completo <ArrowRight size={16} />
-          </Link>
-
-          {/* Actividad Reciente */}
-          <div className="bg-[#111118] border border-white/5 rounded-2xl p-6">
-            <h2 className="text-white font-semibold mb-6">
-              Actividad reciente
-            </h2>
-            <div className="space-y-4">
-              {recentActivity.length > 0 ? (
-                recentActivity.map((item, index) => (
-                  <div
-                    key={index}
-                    className="flex items-center justify-between p-4 rounded-xl bg-[#1a1a24]/50 border border-white/5"
-                  >
-                    <div>
-                      <h4 className="text-white font-medium text-sm">
-                        {item.company}
-                      </h4>
-                      <p className="text-gray-500 text-xs">{item.role}</p>
-                    </div>
-                    <span className={`text-xs font-medium ${item.statusColor}`}>
-                      {item.status}
-                    </span>
-                  </div>
-                ))
-              ) : (
-                <div className="text-center py-10">
-                  <p className="text-gray-500 text-sm">
-                    No hay actividad reciente.
+            {/* Banner de Alerta */}
+            {banner && (
+              <div
+                className={`p-4 rounded-xl border flex gap-4 items-start transition-all ${
+                  banner.type === "error"
+                    ? "bg-[#1a1111] border-red-900/30"
+                    : banner.type === "warning"
+                      ? "bg-[#1a1711] border-yellow-900/30"
+                      : "bg-[#111a1a] border-cyan-900/30"
+                }`}
+              >
+                <div className="shrink-0 mt-0.5">{banner.icon}</div>
+                <div>
+                  <h3 className="text-white font-bold text-sm">
+                    {banner.title}
+                  </h3>
+                  <p className="text-gray-400 text-xs mt-1 leading-relaxed">
+                    {banner.message}
                   </p>
                 </div>
-              )}
+              </div>
+            )}
+
+            {/* Grid de Stats */}
+            <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+              <StatCard
+                label="Postulaciones"
+                value={stats.total.toString()}
+                color="text-purple-500"
+                icon={BarChart3}
+                subtext="últimos 30 días"
+              />
+              <StatCard
+                label="Entrevistas"
+                value={stats.interviews.toString()}
+                color="text-cyan-400"
+                icon={Activity}
+                subtext={`${stats.conversionRate}% de conversión`}
+                subtextColor="text-cyan-500/70"
+              />
+              <StatCard
+                label="Rechazos"
+                value={stats.rejected.toString()}
+                color="text-red-400"
+                icon={TrendingDown}
+                subtext={`${stats.rejectionRate}% del total`}
+                subtextColor="text-red-500/70"
+              />
+              <StatCard
+                label="Match promedio"
+                value={`${stats.avgMatch}%`}
+                color="text-yellow-500"
+                icon={AlertCircle}
+                subtext={
+                  stats.avgMatch < 60
+                    ? "Por debajo del ideal"
+                    : "Buen fit general"
+                }
+                subtextColor="text-yellow-600/70"
+              />
             </div>
 
             <Link
-              href="/applications"
-              className="w-full text-center text-purple-400 text-xs font-medium mt-6 hover:text-purple-300 transition-colors flex items-center justify-center gap-2"
+              href="/diagnostic"
+              className="bg-purple-600 hover:bg-purple-700 text-white px-6 py-3 rounded-xl font-bold flex items-center gap-2 transition-all w-fit text-sm cursor-pointer"
             >
-              Ver todas las postulaciones <ArrowRight size={14} />
+              Ver diagnóstico completo <ArrowRight size={16} />
             </Link>
-          </div>
-        </>
-      )}
-    </div>
+
+            {/* Actividad Reciente */}
+            <div className="bg-[#111118] border border-white/5 rounded-2xl p-6">
+              <h2 className="text-white font-semibold mb-6">
+                Actividad reciente
+              </h2>
+              <div className="space-y-4">
+                {recentActivity.length > 0 ? (
+                  recentActivity.map((item, index) => (
+                    <div
+                      key={index}
+                      className="flex items-center justify-between p-4 rounded-xl bg-[#1a1a24]/50 border border-white/5"
+                    >
+                      <div>
+                        <h4 className="text-white font-medium text-sm">
+                          {item.company}
+                        </h4>
+                        <p className="text-gray-500 text-xs">{item.role}</p>
+                      </div>
+                      <span
+                        className={`text-xs font-medium ${item.statusColor}`}
+                      >
+                        {item.status}
+                      </span>
+                    </div>
+                  ))
+                ) : (
+                  <div className="text-center py-10">
+                    <p className="text-gray-500 text-sm">
+                      No hay actividad reciente.
+                    </p>
+                  </div>
+                )}
+              </div>
+
+              <Link
+                href="/applications"
+                className="w-full text-center text-purple-400 text-xs font-medium mt-6 hover:text-purple-300 transition-colors flex items-center justify-center gap-2"
+              >
+                Ver todas las postulaciones <ArrowRight size={14} />
+              </Link>
+            </div>
+          </>
+        )}
+      </div>
+    </PageTransition>
   );
 }
