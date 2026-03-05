@@ -1,17 +1,32 @@
 "use client";
-import EmptyState from "@/components/EmptyState";
-import StatCard from "@/components/StatCard";
+import { useEffect, useState, useMemo } from "react";
+import Link from "next/link";
 import {
   ArrowRight,
   AlertTriangle,
-  Loader2,
+  PieChart as PieIcon,
   BarChart3,
   Activity,
   TrendingDown,
   AlertCircle,
 } from "lucide-react";
-import { useEffect, useState, useMemo } from "react";
-import Link from "next/link";
+
+import {
+  AreaChart,
+  Area,
+  XAxis,
+  YAxis,
+  CartesianGrid,
+  Tooltip,
+  ResponsiveContainer,
+  PieChart,
+  Pie,
+  Cell,
+} from "recharts";
+
+import StatCard from "@/components/StatCard";
+
+import EmptyState from "@/components/EmptyState";
 import PageTransition from "@/components/PageTransition";
 
 const ROLE_LABELS: Record<string, string> = {
@@ -72,6 +87,49 @@ export default function HomePage() {
 
     fetchData();
   }, []);
+
+  const chartData = useMemo(() => {
+    if (applications.length === 0) return { trend: [], distribution: [] };
+
+    const trend = applications
+      .slice()
+      .reverse()
+      .map((app, index) => ({
+        name: app.companyName || `Post. ${index + 1}`,
+        match: (app.matchLevel || 0) * 10,
+      }))
+      .slice(-10);
+
+    const distribution = [
+      {
+        name: "Ofertas",
+        value: applications.filter((a) => a.status === "HIRED").length,
+        color: "#22c55e",
+      },
+      {
+        name: "Entrevistas",
+        value: applications.filter((a) => a.status === "INTERVIEW").length,
+        color: "#22d3ee",
+      },
+      {
+        name: "En proceso",
+        value: applications.filter((a) => a.status === "REVIEWING").length,
+        color: "#3b82f6",
+      },
+      {
+        name: "Aplicadas",
+        value: applications.filter((a) => a.status === "APPLIED").length,
+        color: "#7c3aed",
+      },
+      {
+        name: "Rechazos",
+        value: applications.filter((a) => a.status === "REJECTED").length,
+        color: "#ef4444",
+      },
+    ].filter((item) => item.value > 0);
+
+    return { trend, distribution };
+  }, [applications]);
 
   const stats = useMemo(() => {
     const total = applications.length;
@@ -149,16 +207,10 @@ export default function HomePage() {
     });
   }, [applications]);
 
-  if (loading) {
-    return (
-      <div className="flex h-[60vh] w-full items-center justify-center">
-        <Loader2 className="animate-spin text-purple-500" size={32} />
-      </div>
-    );
-  }
+  if (loading) return null;
 
   const getFeedbackBanner = () => {
-    const { total, interviews, rejected, avgMatch, conversionRate } = stats;
+    const { total, avgMatch, conversionRate } = stats;
 
     // Caso: Sin suficientes datos
     if (total < 3) return null;
@@ -276,54 +328,148 @@ export default function HomePage() {
               />
             </div>
 
-            <Link
+            {/* --- SECCIÓN DE GRÁFICOS (Solo si hay aplicaciones) --- */}
+            {applications.length > 0 && (
+              <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-stretch">
+                {/* Gráfico de Distribución (4 columnas) */}
+                <div className="lg:col-span-4 bg-card-bg border border-white/5 rounded-2xl p-6 flex flex-col h-full">
+                  <h3 className="text-white font-semibold mb-2 flex items-center gap-2 text-sm">
+                    <PieIcon size={16} className="text-cyan-400" /> Distribución
+                    de Estados
+                  </h3>
+                  <div className="h-64 w-full">
+                    <ResponsiveContainer width="100%" height="100%">
+                      <PieChart>
+                        <Pie
+                          data={chartData.distribution}
+                          innerRadius={70}
+                          outerRadius={90}
+                          paddingAngle={8}
+                          dataKey="value"
+                          stroke="none"
+                        >
+                          {chartData.distribution.map((entry, index) => (
+                            <Cell key={`cell-${index}`} fill={entry.color} />
+                          ))}
+                        </Pie>
+                        <Tooltip
+                          contentStyle={{
+                            backgroundColor: "#121217",
+                            border: "1px solid #ffffff10",
+                            borderRadius: "12px",
+                          }}
+                          itemStyle={{ color: "#fff" }}
+                        />
+                      </PieChart>
+                    </ResponsiveContainer>
+                  </div>
+
+                  {/* Leyenda mejorada para ocupar el espacio vertical */}
+                  <div className="space-y-3 mt-4">
+                    {chartData.distribution.map((item) => (
+                      <div
+                        key={item.name}
+                        className="flex items-center justify-between group"
+                      >
+                        <div className="flex items-center gap-3">
+                          <div
+                            className="w-2.5 h-2.5 rounded-full shadow-[0_0_8px_rgba(0,0,0,0.5)]"
+                            style={{ backgroundColor: item.color }}
+                          />
+                          <span className="text-xs text-gray-400 font-medium group-hover:text-gray-200 transition-colors">
+                            {item.name}
+                          </span>
+                        </div>
+                        <span className="text-xs text-white font-bold bg-white/5 px-2 py-0.5 rounded-md">
+                          {item.value}
+                        </span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Actividad Reciente (8 columnas) */}
+                <div className="lg:col-span-8 bg-card-bg border border-white/5 rounded-2xl p-6 flex flex-col h-full">
+                  <div className="flex justify-between items-center mb-6">
+                    <h2 className="text-white font-semibold flex items-center gap-2 text-sm">
+                      <Activity size={16} className="text-purple-500" />{" "}
+                      Actividad reciente
+                    </h2>
+                    <Link
+                      href="/applications"
+                      className="text-purple-400 text-[11px] font-bold hover:text-purple-300 transition-colors uppercase tracking-wider"
+                    >
+                      Ver todas
+                    </Link>
+                  </div>
+
+                  <div className="space-y-3 grow">
+                    {recentActivity.length > 0 ? (
+                      recentActivity.map((item, index) => (
+                        <div
+                          key={index}
+                          className="flex items-center justify-between p-4 rounded-xl bg-[#1a1a24]/30 border border-white/5 hover:border-purple-500/30 transition-all group"
+                        >
+                          <div>
+                            <h4 className="text-white font-medium text-sm group-hover:text-purple-400 transition-colors">
+                              {item.company}
+                            </h4>
+                            <p className="text-gray-500 text-xs mt-0.5">
+                              {item.role}
+                            </p>
+                          </div>
+                          <div className="text-right">
+                            <span
+                              className={`text-[10px] font-bold uppercase tracking-widest ${item.statusColor}`}
+                            >
+                              {item.status}
+                            </span>
+                            {/* Podrías agregar la fecha aquí si la tienes en el objeto */}
+                          </div>
+                        </div>
+                      ))
+                    ) : (
+                      <p className="text-center py-10 text-gray-500 text-sm italic">
+                        Sin movimientos recientes.
+                      </p>
+                    )}
+                  </div>
+                </div>
+              </div>
+            )}
+            {applications.length === 0 && (
+              <div className="bg-card-bg border border-dashed border-white/10 rounded-2xl p-12 flex flex-col items-center text-center space-y-6">
+                <div className="w-16 h-16 bg-purple-500/10 rounded-full flex items-center justify-center">
+                  <BarChart3 className="text-purple-500" size={32} />
+                </div>
+                <div className="max-w-sm space-y-2">
+                  <h3 className="text-white font-bold text-xl">
+                    Comienza tu camino
+                  </h3>
+                  <p className="text-gray-400 text-sm leading-relaxed">
+                    Aún no has registrado ninguna postulación. Para obtener un
+                    diagnóstico de tu perfil y ver tus estadísticas, necesitas
+                    agregar tu primera postulación.
+                  </p>
+                </div>
+                <Link
+                  href="/applications"
+                  className="bg-purple-600 hover:bg-purple-700 text-white px-8 py-3 rounded-xl font-bold flex items-center gap-2 transition-all group"
+                >
+                  Registrar mi primera postulación
+                  <ArrowRight
+                    size={18}
+                    className="group-hover:translate-x-1 transition-transform"
+                  />
+                </Link>
+              </div>
+            )}
+            {/* <Link
               href="/diagnostic"
               className="bg-purple-600 hover:bg-purple-700 text-white px-6 py-3 rounded-xl font-bold flex items-center gap-2 transition-all w-fit text-sm cursor-pointer"
             >
               Ver diagnóstico completo <ArrowRight size={16} />
-            </Link>
-
-            {/* Actividad Reciente */}
-            <div className="bg-[#111118] border border-white/5 rounded-2xl p-6">
-              <h2 className="text-white font-semibold mb-6">
-                Actividad reciente
-              </h2>
-              <div className="space-y-4">
-                {recentActivity.length > 0 ? (
-                  recentActivity.map((item, index) => (
-                    <div
-                      key={index}
-                      className="flex items-center justify-between p-4 rounded-xl bg-[#1a1a24]/50 border border-white/5"
-                    >
-                      <div>
-                        <h4 className="text-white font-medium text-sm">
-                          {item.company}
-                        </h4>
-                        <p className="text-gray-500 text-xs">{item.role}</p>
-                      </div>
-                      <span
-                        className={`text-xs font-medium ${item.statusColor}`}
-                      >
-                        {item.status}
-                      </span>
-                    </div>
-                  ))
-                ) : (
-                  <div className="text-center py-10">
-                    <p className="text-gray-500 text-sm">
-                      No hay actividad reciente.
-                    </p>
-                  </div>
-                )}
-              </div>
-
-              <Link
-                href="/applications"
-                className="w-full text-center text-purple-400 text-xs font-medium mt-6 hover:text-purple-300 transition-colors flex items-center justify-center gap-2"
-              >
-                Ver todas las postulaciones <ArrowRight size={14} />
-              </Link>
-            </div>
+            </Link> */}
           </>
         )}
       </div>

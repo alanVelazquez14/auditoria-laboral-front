@@ -1,11 +1,11 @@
 "use client";
 import { useDiagnostics } from "@/hooks/useDiagnostics";
-import { useParams } from "next/navigation";
-import { useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { CheckCircle2, XCircle, ChevronDown, Rocket } from "lucide-react";
 import { StatCard } from "@/components/diagnosticPage/StatCard";
 import { getIcon, getIconColor } from "@/components/diagnosticPage/GetIcon";
 import PageTransition from "@/components/PageTransition";
+import { ISSUE_LABELS } from "@/lib/diagnosticLabels";
 
 export interface Diagnostic {
   id: string;
@@ -14,6 +14,7 @@ export interface Diagnostic {
   recommendedAction: string;
   notRecommendedAction: string;
   generatedAt: string;
+  explanation?: string;
 }
 
 export interface DiagnosticData {
@@ -24,20 +25,53 @@ export interface DiagnosticData {
 }
 
 export default function DiagnosticsPage() {
-  const params = useParams();
-  const userId = params.userId as string;
-  const { data, loading, generateNew } = useDiagnostics(userId);
+  const [userId, setUserId] = useState<string | null>(null);
+  const { data, loading, generateNew } = useDiagnostics();
   const [expandedId, setExpandedId] = useState<string | null>(null);
+
+  useEffect(() => {
+    const stored = localStorage.getItem("user");
+    if (stored) {
+      const parsed = JSON.parse(stored);
+      setUserId(parsed.id);
+    }
+  }, []);
+
+  const serverDiagnostics = Array.isArray(data)
+    ? data
+    : data?.diagnostics || [];
+
+  const diagnostics = useMemo(() => {
+    const currentServerDiags = Array.isArray(data)
+      ? data
+      : data?.diagnostics || [];
+
+    if (currentServerDiags.length > 0) return currentServerDiags;
+
+    const totalApps = data?.totalApplications || 0;
+
+    if (totalApps >= 4) {
+      return [
+        {
+          id: "low-conversion-initial",
+          issue: "LOW_RESPONSE_RATE",
+          priority: "high",
+          recommendedAction: "Tu tasa de respuesta es baja...",
+          notRecommendedAction: "No sigas aplicando masivamente...",
+          generatedAt: new Date().toISOString(),
+        },
+      ];
+    }
+    return [];
+  }, [data]);
 
   if (loading)
     return (
-      <div className="flex flex-col items-center justify-center min-h-screen text-white">
+      <div className="flex flex-col items-center justify-center min-h-screen text-white bg-background">
         <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-brand-purple mb-4"></div>
-        <p className="animate-pulse">Realizando análisis automático...</p>
+        <p className="animate-pulse">Analizando tus patrones...</p>
       </div>
     );
-
-  const diagnostics = data?.diagnostics || [];
 
   return (
     <PageTransition>
@@ -51,9 +85,21 @@ export default function DiagnosticsPage() {
           </div>
           <button
             onClick={generateNew}
-            className="bg-brand-purple hover:bg-[#6d28d9] px-6 py-2.5 rounded-lg font-semibold transition-all shadow-lg shadow-purple-500/20 active:scale-95"
+            disabled={loading}
+            className={`px-6 py-2.5 rounded-lg font-semibold transition-all shadow-lg active:scale-95 flex items-center gap-2 cursor-pointer ${
+              loading
+                ? "bg-gray-700 cursor-not-allowed opacity-70"
+                : "bg-brand-purple hover:bg-[#6d28d9] shadow-purple-500/20 text-white"
+            }`}
           >
-            Re-evaluar Perfil
+            {loading ? (
+              <>
+                <div className="animate-spin h-4 w-4 border-2 border-white/30 border-t-white rounded-full" />
+                Analizando...
+              </>
+            ) : (
+              "Re-evaluar Perfil"
+            )}
           </button>
         </header>
 
@@ -77,7 +123,9 @@ export default function DiagnosticsPage() {
         </div>
 
         {/* --- DIAGNOSTICS LIST (Accordions) --- */}
-        {diagnostics.length === 0 ? (
+        {loading ? (
+          <DiagnosticSkeleton />
+        ) : diagnostics.length === 0 ? (
           <div className="bg-card-bg border border-dashed border-gray-800 rounded-2xl p-20 text-center flex flex-col items-center">
             <div className="bg-brand-purple/10 p-5 rounded-full mb-6">
               <Rocket className="text-brand-purple w-10 h-10" />
@@ -95,13 +143,13 @@ export default function DiagnosticsPage() {
             </button>
           </div>
         ) : (
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 items-start">
             {diagnostics.map((diag) => (
               <div
                 key={diag.id}
                 className={`transition-all duration-300 rounded-xl border ${
                   expandedId === diag.id
-                    ? "bg-[#1a1a23] border-brand-purple/50 shadow-lg shadow-purple-500/5"
+                    ? "bg-[#1a1a23] border-brand-purple/50 shadow-lg shadow-brand-purple/5"
                     : "bg-card-bg border-gray-800 hover:border-gray-700"
                 }`}
               >
@@ -109,7 +157,7 @@ export default function DiagnosticsPage() {
                   onClick={() =>
                     setExpandedId(expandedId === diag.id ? null : diag.id)
                   }
-                  className="w-full p-5 flex items-center justify-between text-left"
+                  className="w-full p-5 flex items-center justify-between text-left cursor-pointer"
                 >
                   <div className="flex items-center gap-4">
                     <div
@@ -119,7 +167,8 @@ export default function DiagnosticsPage() {
                     </div>
                     <div>
                       <h3 className="font-semibold text-gray-100 leading-tight">
-                        {diag.issue.replace(/_/g, " ")}
+                        {ISSUE_LABELS[diag.issue] ??
+                          diag.issue.replace(/_/g, " ")}
                       </h3>
                       <span
                         className={`text-[10px] font-bold uppercase tracking-widest ${
@@ -146,10 +195,22 @@ export default function DiagnosticsPage() {
                 {expandedId === diag.id && (
                   <div className="px-5 pb-6 space-y-4 animate-in fade-in slide-in-from-top-2">
                     <div className="h-px bg-gray-800/50 w-full mb-4" />
+
+                    {diag.explanation && (
+                      <div className="bg-brand-purple/5 border-l-2 border-brand-purple p-4 mb-4 rounded-r-lg">
+                        <p className="text-[10px] text-brand-purple uppercase font-bold mb-1 tracking-widest">
+                          Análisis detallado
+                        </p>
+                        <p className="text-sm text-gray-300 leading-relaxed italic">
+                          "{diag.explanation}"
+                        </p>
+                      </div>
+                    )}
+
                     <div className="flex gap-4 items-start bg-green-500/5 p-3 rounded-lg border border-green-500/10">
                       <CheckCircle2 className="w-5 h-5 text-green-500 shrink-0 mt-0.5" />
                       <div>
-                        <p className="text-xs text-green-500/70 uppercase font-bold mb-0.5">
+                        <p className="text-[10px] text-green-500/70 uppercase font-bold mb-0.5">
                           Recomendación
                         </p>
                         <p className="text-sm text-gray-200">
@@ -157,10 +218,11 @@ export default function DiagnosticsPage() {
                         </p>
                       </div>
                     </div>
+
                     <div className="flex gap-4 items-start bg-red-500/5 p-3 rounded-lg border border-red-500/10">
                       <XCircle className="w-5 h-5 text-red-500 shrink-0 mt-0.5" />
                       <div>
-                        <p className="text-xs text-red-500/70 uppercase font-bold mb-0.5">
+                        <p className="text-[10px] text-red-500/70 uppercase font-bold mb-0.5">
                           Evitar
                         </p>
                         <p className="text-sm text-gray-200">
@@ -178,3 +240,27 @@ export default function DiagnosticsPage() {
     </PageTransition>
   );
 }
+
+// Componente Skeleton simple
+const DiagnosticSkeleton = () => (
+  <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+    {[1, 2].map((i) => (
+      <div
+        key={i}
+        className="bg-card-bg border border-gray-800 rounded-xl p-5 animate-pulse"
+      >
+        <div className="flex items-center gap-4 mb-4">
+          <div className="w-10 h-10 bg-gray-700 rounded-lg"></div>
+          <div className="space-y-2">
+            <div className="h-4 w-32 bg-gray-700 rounded"></div>
+            <div className="h-3 w-20 bg-gray-700 rounded"></div>
+          </div>
+        </div>
+        <div className="h-px bg-gray-800 w-full mb-4"></div>
+        <div className="space-y-3">
+          <div className="h-12 bg-gray-800/50 rounded-lg w-full"></div>
+        </div>
+      </div>
+    ))}
+  </div>
+);
