@@ -21,7 +21,7 @@ export interface DiagnosticData {
   score: any;
   diagnostics: Diagnostic[];
   totalApplications: number;
-  lastUpdate: string;
+  lastUpdate: string | null;
 }
 
 export default function DiagnosticsPage() {
