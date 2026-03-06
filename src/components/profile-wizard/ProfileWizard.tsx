@@ -9,8 +9,11 @@ import StepStack from "./StepStack";
 import StepApplicationStrategy from "./StepApplicationStrategy";
 import StepFinal from "./StepFinal";
 import StepNetworks from "./StepNetworks";
+import { toast } from "sonner";
+import { useSession } from "next-auth/react";
 
 export default function ProfileWizard() {
+  const { data: session } = useSession();
   const [step, setStep] = useState(1);
   const [cvFile, setCvFile] = useState<File | null>(null);
 
@@ -269,10 +272,12 @@ export default function ProfileWizard() {
   };
 
   const handleFinish = async () => {
-    const userId = localStorage.getItem("userId");
-    const token = localStorage.getItem("token");
+    const userId = session?.user?.id;
 
-    if (!userId || !token) return;
+    if (!userId) {
+      toast.error("No se encontró una sesión activa. Por favor, reingresa.");
+      return;
+    }
 
     const roleMapping: Record<string, string> = {
       frontend: "frontend",
@@ -340,7 +345,6 @@ export default function ProfileWizard() {
         `${process.env.NEXT_PUBLIC_API_URL}/api/users/${userId}/profile`,
         {
           method: "PATCH",
-          headers: { Authorization: `Bearer ${token}` },
           body: formDataToSend,
         },
       );
@@ -348,7 +352,7 @@ export default function ProfileWizard() {
       const result = await response.json();
 
       if (response.ok) {
-        alert("¡Perfil completado con éxito!");
+        toast.success("¡Perfil completado con éxito!");
         window.location.href = "/home";
       } else {
         console.error("Errores del backend:", result.message);
@@ -359,7 +363,7 @@ export default function ProfileWizard() {
         );
       }
     } catch (error: any) {
-      alert("Hubo un error al guardar tus datos: " + error.message);
+      toast.error("Hubo un error al guardar tus datos: " + error.message);
     }
   };
 

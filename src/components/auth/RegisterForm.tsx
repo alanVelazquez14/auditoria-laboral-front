@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { User, Mail, Lock } from "lucide-react";
+import { toast } from "sonner";
 
 interface RegisterFormProps {
   onSuccess?: (userId: string) => void;
@@ -29,7 +30,6 @@ const RegisterForm = ({ onSuccess }: RegisterFormProps) => {
       );
 
       const data = await response.json();
-      console.log("Respuesta del servidor:", data);
 
       if (!response.ok) {
         setErrorMessage(data.message || "Error al registrarse");
@@ -43,7 +43,7 @@ const RegisterForm = ({ onSuccess }: RegisterFormProps) => {
         if (onSuccess) onSuccess(data.id);
       }
       // Registro exitoso
-      alert("Registro exitoso!");
+      toast.success("Registro exitoso!");
       if (onSuccess) onSuccess(data.id);
     } catch (error: any) {
       setErrorMessage(error.message || "Error inesperado");

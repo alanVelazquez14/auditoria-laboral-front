@@ -1,41 +1,33 @@
 import { useState } from "react";
 import { Mail, Lock } from "lucide-react";
 import { useRouter } from "next/navigation";
+import { toast } from "sonner";
+import { signIn } from "next-auth/react";
 
 export const LoginForm = () => {
   const [loginData, setLoginData] = useState({ email: "", password: "" });
+  const [loading, setLoading] = useState(false);
   const router = useRouter();
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
-    try {
-      const response = await fetch(
-        `${process.env.NEXT_PUBLIC_API_URL}/api/users/login`,
-        {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify(loginData),
-        },
-      );
+    setLoading(true);
 
-      let data;
-      try {
-        data = await response.json();
-      } catch {
-        throw new Error("Respuesta inválida del servidor");
-      }
+    const result = await signIn("credentials", {
+      redirect: false,
+      email: loginData.email.toLowerCase().trim(),
+      password: loginData.password,
+    });
 
-      if (!response.ok)
-        throw new Error(data.message || "Error al iniciar sesión");
-      localStorage.setItem("token", data.token);
-
-      if (data.user && data.user.id) {
-        localStorage.setItem("userId", data.user.id);
-      }
+    if (result?.error) {
+      toast.error("Email o contraseña incorrectos", {
+        description: "Por favor, verifica tus datos e intenta nuevamente.",
+      });
+      setLoading(false);
+    } else {
+      toast.success("¡Acceso exitoso!");
       router.push("/home");
-    } catch (error: any) {
-      console.error("Error:", error.message);
-      alert(`Error: ${error.message}`);
+      router.refresh();
     }
   };
 
@@ -89,18 +81,21 @@ export const LoginForm = () => {
         </div>
       </div>
       <div className="flex justify-end text-sm">
-        <a
-          href="#"
+        <button
+          type="button"
+          onClick={() => router.push("/forgot-password")}
           className="text-gray-500 hover:text-purple-400 transition-colors"
         >
           ¿Olvidaste tu contraseña?
-        </a>
+        </button>
       </div>
       <button
         type="submit"
-        className={`${buttonClasses} bg-cyan-600 hover:bg-cyan-700 shadow-lg shadow-cyan-500/20 cursor-pointer`}
+        disabled={loading}
+        style={{ backgroundColor: loading ? "#334155" : "#0891b2" }}
+        className={`${buttonClasses} shadow-lg shadow-cyan-500/20`}
       >
-        Iniciar Sesión
+        {loading ? "Iniciando..." : "Iniciar Sesión"}
       </button>
     </form>
   );

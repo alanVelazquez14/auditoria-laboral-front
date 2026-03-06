@@ -1,33 +1,41 @@
 "use client";
 
 import { DiagnosticData } from "@/app/(dashboard)/diagnostic/page";
+import { signOut, useSession } from "next-auth/react";
 import { useState, useEffect, useCallback } from "react";
 import { toast } from "sonner";
 
 export const useDiagnostics = () => {
+  const { data: session, status } = useSession();
   const [data, setData] = useState<DiagnosticData | null>(null);
   const [loading, setLoading] = useState(false);
 
   const fetchSummary = useCallback(async () => {
-    const token =
-      typeof window !== "undefined" ? localStorage.getItem("token") : null;
-
-    if (!token) {
-      return;
-    }
+    if (status !== "authenticated") return;
 
     try {
       setLoading(true);
       const res = await fetch(
         `${process.env.NEXT_PUBLIC_API_URL}/api/diagnostics/summary`,
         {
-          headers: { Authorization: `Bearer ${token}` },
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${session.user.accessToken}`,
+          },
           cache: "no-store",
         },
       );
 
       if (res.status === 401) {
-        console.warn("Sesión expirada o token inválido");
+        toast.error("Tu sesión ha expirado", {
+          description: "Por seguridad, debes volver a ingresar.",
+          style: {
+            background: "#121217",
+            color: "#fff",
+            border: "1px solid #ef444450",
+          },
+        });
+        signOut({ callbackUrl: "/auth" });
         return;
       }
 
@@ -40,18 +48,22 @@ export const useDiagnostics = () => {
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [status, session]);
 
   const generateNew = async () => {
-    const token = localStorage.getItem("token");
-    setLoading(true);
+    if (status !== "authenticated") return;
+    const token = session?.user?.accessToken;
 
+    setLoading(true);
     try {
       const response = await fetch(
         `${process.env.NEXT_PUBLIC_API_URL}/api/diagnostics/generate`,
         {
           method: "POST",
-          headers: { Authorization: `Bearer ${token}` },
+          headers: {
+            Authorization: `Bearer ${token}`,
+            "Content-Type": "application/json",
+          },
         },
       );
 
@@ -59,20 +71,25 @@ export const useDiagnostics = () => {
 
       if (!response.ok) {
         toast.warning("Análisis no disponible", {
-          description:
-            newData.message || "Faltan postulaciones para un nuevo análisis",
-          style: { border: "1px solid #7c3aed30", background: "#121217" },
+          description: newData.message || "Faltan postulaciones",
+          style: {
+            border: "1px solid #7c3aed30",
+            background: "#121217",
+            color: "#fff",
+          },
         });
         return;
       }
 
       setData(newData);
-      toast.success("¡Diagnóstico actualizado!", {
-        description: "Hemos recalculado tus métricas con éxito.",
-      });
+      toast.success("¡Diagnóstico actualizado!");
     } catch (error) {
-      toast.error("Error de conexión", {
-        description: "No pudimos contactar con el servidor.",
+      toast.error("Error al cargar diagnóstico", {
+        style: {
+          background: "#121217",
+          color: "#fff",
+          border: "1px solid #7c3aed30",
+        },
       });
     } finally {
       setLoading(false);

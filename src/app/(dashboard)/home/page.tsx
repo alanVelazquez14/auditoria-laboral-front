@@ -11,23 +11,14 @@ import {
   AlertCircle,
 } from "lucide-react";
 
-import {
-  AreaChart,
-  Area,
-  XAxis,
-  YAxis,
-  CartesianGrid,
-  Tooltip,
-  ResponsiveContainer,
-  PieChart,
-  Pie,
-  Cell,
-} from "recharts";
+import { Tooltip, ResponsiveContainer, PieChart, Pie, Cell } from "recharts";
 
 import StatCard from "@/components/StatCard";
 
 import EmptyState from "@/components/EmptyState";
 import PageTransition from "@/components/PageTransition";
+
+import { useSession } from "next-auth/react";
 
 const ROLE_LABELS: Record<string, string> = {
   frontend: "Frontend Developer",
@@ -39,30 +30,27 @@ const ROLE_LABELS: Record<string, string> = {
 };
 
 export default function HomePage() {
+  const { data: session, status } = useSession();
   const [user, setUser] = useState<any>(null);
   const [applications, setApplications] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     const fetchData = async () => {
-      const userId = localStorage.getItem("userId");
-      const token = localStorage.getItem("token");
+      if (status === "loading") return;
 
-      if (!userId || !token) {
+      const userId = session?.user?.id;
+
+      if (!userId) {
         setLoading(false);
         return;
       }
 
       try {
         const [userRes, appsRes] = await Promise.all([
-          fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/users/${userId}`, {
-            headers: { Authorization: `Bearer ${token}` },
-          }),
+          fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/users/${userId}`),
           fetch(
             `${process.env.NEXT_PUBLIC_API_URL}/api/job-applications/${userId}/history`,
-            {
-              headers: { Authorization: `Bearer ${token}` },
-            },
           ),
         ]);
 
@@ -464,12 +452,6 @@ export default function HomePage() {
                 </Link>
               </div>
             )}
-            {/* <Link
-              href="/diagnostic"
-              className="bg-purple-600 hover:bg-purple-700 text-white px-6 py-3 rounded-xl font-bold flex items-center gap-2 transition-all w-fit text-sm cursor-pointer"
-            >
-              Ver diagnóstico completo <ArrowRight size={16} />
-            </Link> */}
           </>
         )}
       </div>

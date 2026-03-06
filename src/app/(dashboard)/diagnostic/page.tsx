@@ -1,6 +1,8 @@
 "use client";
 import { useDiagnostics } from "@/hooks/useDiagnostics";
-import { useEffect, useMemo, useState } from "react";
+import { useRouter } from "next/navigation";
+import { useMemo, useState } from "react";
+import { useSession } from "next-auth/react";
 import { CheckCircle2, XCircle, ChevronDown, Rocket } from "lucide-react";
 import { StatCard } from "@/components/diagnosticPage/StatCard";
 import { getIcon, getIconColor } from "@/components/diagnosticPage/GetIcon";
@@ -25,21 +27,10 @@ export interface DiagnosticData {
 }
 
 export default function DiagnosticsPage() {
-  const [userId, setUserId] = useState<string | null>(null);
+  const { data: session, status } = useSession();
+  const router = useRouter();
   const { data, loading, generateNew } = useDiagnostics();
   const [expandedId, setExpandedId] = useState<string | null>(null);
-
-  useEffect(() => {
-    const stored = localStorage.getItem("user");
-    if (stored) {
-      const parsed = JSON.parse(stored);
-      setUserId(parsed.id);
-    }
-  }, []);
-
-  const serverDiagnostics = Array.isArray(data)
-    ? data
-    : data?.diagnostics || [];
 
   const diagnostics = useMemo(() => {
     const currentServerDiags = Array.isArray(data)
@@ -65,13 +56,31 @@ export default function DiagnosticsPage() {
     return [];
   }, [data]);
 
-  if (loading)
+  if (status === "loading" || loading)
     return (
       <div className="flex flex-col items-center justify-center min-h-screen text-white bg-background">
         <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-brand-purple mb-4"></div>
-        <p className="animate-pulse">Analizando tus patrones...</p>
+        <p className="animate-pulse text-gray-400">
+          Analizando tus patrones...
+        </p>
       </div>
     );
+
+  if (status === "unauthenticated") {
+    return (
+      <div className="flex flex-col items-center justify-center min-h-screen">
+        <p className="text-gray-400 mb-4">
+          Por favor, inicia sesión para ver tu diagnóstico.
+        </p>
+        <button
+          onClick={() => router.push("/login")}
+          className="bg-brand-purple px-6 py-2 rounded-lg text-white font-bold"
+        >
+          Ir al Login
+        </button>
+      </div>
+    );
+  }
 
   return (
     <PageTransition>
@@ -241,7 +250,6 @@ export default function DiagnosticsPage() {
   );
 }
 
-// Componente Skeleton simple
 const DiagnosticSkeleton = () => (
   <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
     {[1, 2].map((i) => (

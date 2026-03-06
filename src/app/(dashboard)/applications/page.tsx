@@ -1,4 +1,6 @@
 "use client";
+
+import { useSession } from "next-auth/react";
 import { useEffect, useMemo, useState } from "react";
 import { Plus, Search, LayoutGrid, List } from "lucide-react";
 import { ApplicationCard } from "@/components/applicationPage/ApplicationCard";
@@ -37,6 +39,7 @@ const STATUS_MAP: Record<string, { label: string; color: string }> = {
 };
 
 export default function ApplicationsPage() {
+  const { data: session, status } = useSession();
   const [apps, setApps] = useState<JobApplication[]>([]);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [filter, setFilter] = useState("all");
@@ -45,18 +48,26 @@ export default function ApplicationsPage() {
   const [selectedApp, setSelectedApp] = useState<JobApplication | null>(null);
 
   const fetchApps = async () => {
-    const userId = localStorage.getItem("userId");
-    const token = localStorage.getItem("token");
-    const res = await fetch(
-      `${process.env.NEXT_PUBLIC_API_URL}/api/job-applications/${userId}/history`,
-      { headers: { Authorization: `Bearer ${token}` } },
-    );
-    if (res.ok) setApps(await res.json());
+    if (!session?.user?.id) return;
+    try {
+      const res = await fetch(
+        `${process.env.NEXT_PUBLIC_API_URL}/api/job-applications/${session.user.id}/history`,
+      );
+
+      if (res.ok) {
+        const data = await res.json();
+        setApps(data);
+      }
+    } catch (error) {
+      console.error("Error al cargar aplicaciones:", error);
+    }
   };
 
   useEffect(() => {
-    fetchApps();
-  }, []);
+    if (status === "authenticated") {
+      fetchApps();
+    }
+  }, [status, session]);
 
   const filteredApps = useMemo(() => {
     return apps
@@ -96,7 +107,6 @@ export default function ApplicationsPage() {
           method: "PATCH",
           headers: {
             "Content-Type": "application/json",
-            Authorization: `Bearer ${token}`,
           },
           body: JSON.stringify({ status: newStatus }),
         },

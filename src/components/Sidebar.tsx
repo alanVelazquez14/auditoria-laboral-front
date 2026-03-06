@@ -9,8 +9,9 @@ import {
   User,
   LogOut,
   Zap,
-  Heart
+  Heart,
 } from "lucide-react";
+import { signOut } from "next-auth/react";
 
 const menuItems = [
   { name: "Inicio", icon: Home, href: "/home" },
@@ -23,12 +24,6 @@ const menuItems = [
 
 export const Sidebar = () => {
   const pathname = usePathname();
-
-  const handleLogout = () => {
-    localStorage.removeItem("token");
-    localStorage.removeItem("userId");
-    window.location.href = "/auth";
-  };
 
   return (
     <aside className="w-64 h-screen bg-[#0a0a0f] border-r border-white/5 flex flex-col p-6 fixed left-0 top-0 backdrop-blur-md">
@@ -70,11 +65,14 @@ export const Sidebar = () => {
 
       {/* Botón Salir */}
       <button
-        onClick={handleLogout}
-        className="flex items-center gap-3 px-4 py-3 text-gray-500 hover:text-red-400 transition-colors mt-auto"
+        onClick={() => signOut({ callbackUrl: "/auth" })}
+        className="flex items-center gap-3 px-4 py-3 text-gray-500 hover:text-red-400 hover:bg-red-400/5 rounded-xl transition-all mt-auto cursor-pointer group"
       >
-        <LogOut size={20} />
-        <span className="font-medium cursor-pointer">Cerrar sesión</span>
+        <LogOut
+          size={20}
+          className="group-hover:rotate-12 transition-transform"
+        />
+        <span className="font-medium">Cerrar sesión</span>
       </button>
     </aside>
   );

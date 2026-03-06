@@ -18,7 +18,7 @@ export default function StepFinal({
       <h2 className="text-2xl font-bold text-white">Resumen y Confirmación</h2>
 
       <div className="space-y-4">
-        <label className="flex items-center gap-2 cursor-pointer">
+        <label className="flex items-center gap-4 cursor-pointer">
           <input
             type="checkbox"
             checked={!!consentToShareData}
@@ -26,7 +26,15 @@ export default function StepFinal({
             className="w-4 h-4 accent-purple-600"
           />
           <span className="text-gray-400">
-            Acepto compartir mis datos para aplicar a ofertas
+            Aceptas que Depurapp almacene tus datos para ofrecerte contenido personalizado. Puedes revisar nuestra{" "}
+            <a
+              href="/privacy-policy"
+              target="_blank"
+              className="text-purple-400 hover:underline"
+            >
+              política de privacidad
+            </a>{" "}
+            para más detalles.
           </span>
         </label>
 

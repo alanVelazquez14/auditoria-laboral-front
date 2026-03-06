@@ -1,6 +1,8 @@
 import type { Metadata } from "next";
 import NextTopLoader from "nextjs-toploader";
 import "./globals.css";
+import { Providers } from "@/components/Providers/Providers";
+import { Toaster } from "sonner";
 
 export const metadata: Metadata = {
   title: "DepurApp",
@@ -24,7 +26,10 @@ export default function RootLayout({
           easing="ease"
           shadow="0 0 10px #7c3aed,0 0 5px #7c3aed"
         />
-        {children}
+        <Providers>
+          {children}
+          <Toaster richColors position="top-right" theme="dark" />
+        </Providers>
       </body>
     </html>
   );
