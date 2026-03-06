@@ -43,12 +43,9 @@ export default function PhotoAndData({
       <p className="text-sm text-brand-purple font-medium mb-1 uppercase">
         {userData.roleTarget || "Developer"} • {userData.seniority}
       </p>
-      <p className="text-[10px] text-gray-500 mb-6 uppercase tracking-widest">
-        {userData.yearsExperience} de experiencia total
-      </p>
 
       {/* Detalles Informativos */}
-      <div className="space-y-2 text-left">
+      <div className="space-y-2 text-left mt-10">
         <div className="flex items-center gap-3 p-3 bg-background rounded-xl border border-gray-800/50">
           <Mail size={16} className="text-gray-500" />
           <span className="text-xs text-gray-300 truncate">

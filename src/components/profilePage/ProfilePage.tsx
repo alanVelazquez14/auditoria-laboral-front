@@ -8,13 +8,14 @@ import Stack from "./Stack";
 import CV from "./CV";
 import BasicInfoModal from "./BasicInfoModal";
 import { useSession } from "next-auth/react";
+import CareerMetrics from "./CareerMetrics";
 
 export default function ProfilePage({ userData }: { userData: any }) {
   const { data: session } = useSession();
-
   const [isSending, setIsSending] = useState(false);
   const [isEditBasicOpen, setIsEditBasicOpen] = useState(false);
-  const [userDataState, setUserData] = useState(userData);
+
+  const [profileData, setProfileData] = useState(userData);
 
   const handleResetPassword = async () => {
     try {
@@ -24,7 +25,7 @@ export default function ProfilePage({ userData }: { userData: any }) {
         {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ email: userData.email }),
+          body: JSON.stringify({ email: profileData.email }),
         },
       );
 
@@ -52,22 +53,23 @@ export default function ProfilePage({ userData }: { userData: any }) {
         englishLevel: updatedFields.englishLevel,
         seniority: updatedFields.seniority,
         workPreference: updatedFields.workPreference,
+        recentApplications: updatedFields.recentApplications,
+        stackYears: updatedFields.stackYears,
+        applicationType: updatedFields.applicationType,
 
-        targetRole: userData.targetRole || "fullstack",
-        yearsExperience: userData.yearsExperience || "1-3",
-        stack: userData.stack || [],
-        cvType: userData.cvType || "file",
-        isRoleOptimized: userData.isRoleOptimized || "complete",
-        stackYears: userData.stackYears || "0",
-        stackExperienceType: userData.stackExperienceType || [],
-        recentApplications: userData.recentApplications || "",
-        interviews: userData.interviews || "",
-        recentRejections: userData.recentRejections || "",
-        applicationType: userData.applicationType || [],
+        targetRole: profileData.targetRole || "fullstack",
+        yearsExperience: profileData.yearsExperience || "1-3",
+        stack: profileData.stack || [],
+        cvType: profileData.cvType || "file",
+        isRoleOptimized: profileData.isRoleOptimized || "complete",
+        stackExperienceType: profileData.stackExperienceType || [],
+        interviews: profileData.interviews || "",
+        recentRejections: profileData.recentRejections || "",
         consentToShareData: true,
       };
+
       const response = await fetch(
-        `${process.env.NEXT_PUBLIC_API_URL}/api/users/${userData.id}/profile`,
+        `${process.env.NEXT_PUBLIC_API_URL}/api/users/${profileData.id}/profile`,
         {
           method: "PATCH",
           headers: {
@@ -86,7 +88,7 @@ export default function ProfilePage({ userData }: { userData: any }) {
         throw new Error(errorMessage || "Error en la validación del servidor");
       }
 
-      setUserData((prev: any) => ({
+      setProfileData((prev: any) => ({
         ...prev,
         ...updatedFields,
       }));
@@ -101,7 +103,7 @@ export default function ProfilePage({ userData }: { userData: any }) {
     }
   };
 
-  if (!userData)
+  if (!profileData)
     return <div className="p-8 text-white">Cargando perfil...</div>;
 
   return (
@@ -120,7 +122,7 @@ export default function ProfilePage({ userData }: { userData: any }) {
           {/* COLUMNA IZQUIERDA: Foto y Datos Básicos */}
           <div className="lg:col-span-1 space-y-6">
             <PhotoAndData
-              userData={userData}
+              userData={profileData}
               onEdit={() => setIsEditBasicOpen(true)}
             />
 
@@ -140,11 +142,14 @@ export default function ProfilePage({ userData }: { userData: any }) {
 
           {/* COLUMNA DERECHA: Stack y CV */}
           <div className="lg:col-span-2 space-y-6">
-            {/* Gestión de Stack Tecnológico */}
-            <Stack userData={userData} />
-
             {/* Gestión de CV */}
-            <CV userData={userData} />
+            <CV userData={profileData} />
+
+            {/* Gestión de Stack Tecnológico */}
+            <Stack userData={profileData} />
+
+            {/* Métricas de Carrera */}
+            <CareerMetrics userData={profileData} />
           </div>
         </div>
       </div>
@@ -152,7 +157,7 @@ export default function ProfilePage({ userData }: { userData: any }) {
       <BasicInfoModal
         isOpen={isEditBasicOpen}
         onClose={() => setIsEditBasicOpen(false)}
-        userData={userData}
+        userData={profileData}
         onSave={handleUpdateProfile}
       />
     </PageTransition>
