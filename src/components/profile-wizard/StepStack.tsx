@@ -14,7 +14,7 @@ type StepStackProps = {
   setStackMatchesCV: (value: boolean) => void;
 };
 
-const TECH_SUGGESTIONS = [
+export const TECH_SUGGESTIONS = [
   "React",
   "Next.js",
   "Node.js",
