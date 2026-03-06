@@ -3,9 +3,14 @@ import { useState } from "react";
 import { Gitlab } from "lucide-react";
 import RegisterForm from "./RegisterForm";
 import { LoginForm } from "./LoginForm";
+import { signIn } from "next-auth/react";
 
 const AuthView = () => {
   const [activeView, setActiveView] = useState("register");
+
+  const handleSocialLogin = (provider: string) => {
+    signIn(provider, { callbackUrl: "/home" });
+  };
 
   const socialButtonClasses =
     "w-full p-3 rounded-lg font-medium flex items-center justify-center gap-2 border border-gray-700 bg-[#1a1a24] hover:bg-gray-800 transition-colors";
@@ -56,12 +61,16 @@ const AuthView = () => {
           </div>
 
           <div className="space-y-4">
-            <button className={socialButtonClasses}>
-              <Gitlab className="text-gray-400" size={20} />
+            <button
+              onClick={() => handleSocialLogin("google")}
+              className={socialButtonClasses + " cursor-pointer"}
+            >
+              <img
+                src="https://authjs.dev/img/providers/google.svg"
+                className="w-5 h-5"
+                alt="Google"
+              />
               Google
-            </button>
-            <button className={socialButtonClasses}>
-              <Gitlab className="text-gray-400" size={20} /> GitHub
             </button>
           </div>
         </div>
@@ -88,13 +97,16 @@ const AuthView = () => {
           </div>
 
           <div className="space-y-4">
-            <button className={socialButtonClasses}>
-              <Gitlab className="text-gray-400" size={20} />
+            <button
+              onClick={() => handleSocialLogin("google")}
+              className={socialButtonClasses + " cursor-pointer"}
+            >
+              <img
+                src="https://authjs.dev/img/providers/google.svg"
+                className="w-5 h-5"
+                alt="Google"
+              />
               Google
-            </button>
-            <button className={socialButtonClasses}>
-              <Gitlab className="text-gray-400" size={20} />
-              GitHub
             </button>
           </div>
         </div>
