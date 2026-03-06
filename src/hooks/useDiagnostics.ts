@@ -11,8 +11,7 @@ export const useDiagnostics = () => {
   const [loading, setLoading] = useState(false);
 
   const fetchSummary = useCallback(async () => {
-    if (status !== "authenticated") return;
-
+    if (status !== "authenticated" || !session?.accessToken) return;
     try {
       setLoading(true);
       const res = await fetch(
@@ -20,7 +19,7 @@ export const useDiagnostics = () => {
         {
           headers: {
             "Content-Type": "application/json",
-            Authorization: `Bearer ${session.user.accessToken}`,
+            Authorization: `Bearer ${session.accessToken}`,
           },
           cache: "no-store",
         },
@@ -51,8 +50,8 @@ export const useDiagnostics = () => {
   }, [status, session]);
 
   const generateNew = async () => {
-    if (status !== "authenticated") return;
-    const token = session?.user?.accessToken;
+    if (status !== "authenticated" || !session?.accessToken) return;
+    const token = session?.accessToken;
 
     setLoading(true);
     try {

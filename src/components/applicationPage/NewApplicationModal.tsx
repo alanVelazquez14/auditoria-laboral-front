@@ -1,12 +1,15 @@
 "use client";
 import { useState } from "react";
 import { X, Link as LinkIcon } from "lucide-react";
+import { useSession } from "next-auth/react";
+import { toast } from "sonner";
 
 export default function NewApplicationModal({
   isOpen,
   onClose,
   onSuccess,
 }: any) {
+  const { data: session } = useSession();
   const [loading, setLoading] = useState(false);
 
   const [formData, setFormData] = useState({
@@ -20,10 +23,13 @@ export default function NewApplicationModal({
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setLoading(true);
 
-    const userId = localStorage.getItem("userId");
-    const token = localStorage.getItem("token");
+    if (!session?.user?.id || !session?.accessToken) {
+      toast.error("Debes estar autenticado para realizar esta acción");
+      return;
+    }
+
+    setLoading(true);
 
     const rawPayload: any = {
       companyName: formData.companyName.trim(),
@@ -66,12 +72,12 @@ export default function NewApplicationModal({
 
     try {
       const response = await fetch(
-        `${process.env.NEXT_PUBLIC_API_URL}/api/job-applications/${userId}`,
+        `${process.env.NEXT_PUBLIC_API_URL}/api/job-applications/${session.user.id}`,
         {
           method: "POST",
           headers: {
             "Content-Type": "application/json",
-            Authorization: `Bearer ${token}`,
+            Authorization: `Bearer ${session.accessToken}`,
           },
           body: JSON.stringify(rawPayload),
         },

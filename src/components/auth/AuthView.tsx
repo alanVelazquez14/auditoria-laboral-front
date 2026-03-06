@@ -15,7 +15,7 @@ const AuthView = () => {
       <div className="mb-6 w-full flex items-center justify-center gap-5 bg-[#1a1a24] rounded-lg p-2 border border-white/5 md:hidden">
         <button
           onClick={() => setActiveView("register")}
-          className={`w-1/2 px-4 py-2 rounded-md text-sm font-medium transition-all ${
+          className={`w-1/2 px-4 py-2 rounded-md text-sm font-medium transition-all cursor-pointer ${
             activeView === "register"
               ? "bg-purple-600 text-white"
               : "text-gray-400"
@@ -25,7 +25,7 @@ const AuthView = () => {
         </button>
         <button
           onClick={() => setActiveView("login")}
-          className={`w-1/2 px-4 py-2 rounded-md text-sm font-medium transition-all ${
+          className={`w-1/2 px-4 py-2 rounded-md text-sm font-medium transition-all cursor-pointer ${
             activeView === "login" ? "bg-cyan-600 text-white" : "text-gray-400"
           }`}
         >

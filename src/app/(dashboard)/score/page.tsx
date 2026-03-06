@@ -2,7 +2,6 @@
 import { useDiagnostics } from "@/hooks/useDiagnostics";
 import PageTransition from "@/components/PageTransition";
 import { Activity, Target, TrendingUp, Calendar } from "lucide-react";
-import { motion } from "framer-motion";
 import { ScoreCircle } from "@/components/scorePage/ScoreCircle";
 import { PillarCard } from "@/components/scorePage/PillarCard";
 

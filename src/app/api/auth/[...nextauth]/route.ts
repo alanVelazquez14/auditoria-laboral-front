@@ -3,9 +3,9 @@ import CredentialsProvider from "next-auth/providers/credentials";
 
 declare module "next-auth" {
   interface Session {
+    accessToken?: string;
     user: {
       id: string;
-      accessToken?: string;
       roleTarget?: string;
     } & DefaultSession["user"];
   }
@@ -75,9 +75,9 @@ const handler = NextAuth({
     },
     async session({ session, token }) {
       if (session.user) {
-        (session.user as any).id = token.id;
-        (session.user as any).roleTarget = token.roleTarget;
-        session.user.accessToken = token.accessToken as string;
+        session.user.id = token.id;
+        session.user.roleTarget = token.roleTarget;
+        session.accessToken = token.accessToken;
       }
       return session;
     },

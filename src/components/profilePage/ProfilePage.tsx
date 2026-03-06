@@ -1,7 +1,6 @@
 "use client";
 import PageTransition from "@/components/PageTransition";
 import {
-  User,
   Mail,
   Lock,
   FileText,
@@ -13,8 +12,36 @@ import {
   MapPin,
   Briefcase,
 } from "lucide-react";
+import { useState } from "react";
+import { toast } from "sonner";
 
 export default function ProfilePage({ userData }: { userData: any }) {
+  const [isSending, setIsSending] = useState(false);
+
+  const handleResetPassword = async () => {
+    try {
+      setIsSending(true);
+      const response = await fetch(
+        `${process.env.NEXT_PUBLIC_API_URL}/api/users/forgot-password`,
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ email: userData.email }),
+        },
+      );
+
+      if (!response.ok) throw new Error("No se pudo enviar el correo");
+
+      toast.success("Enlace de seguridad enviado", {
+        description: "Revisa tu bandeja de entrada para cambiar tu contraseña.",
+      });
+    } catch (error) {
+      toast.error("Error al procesar la solicitud");
+    } finally {
+      setIsSending(false);
+    }
+  };
+
   if (!userData)
     return <div className="p-8 text-white">Cargando perfil...</div>;
 
@@ -107,9 +134,17 @@ export default function ProfilePage({ userData }: { userData: any }) {
               </div>
             </section>
 
-            <button className="w-full flex items-center justify-center gap-2 p-4 bg-gray-800/50 hover:bg-gray-800 text-white rounded-2xl border border-gray-700 transition-all text-sm font-medium">
-              <Lock size={16} />
-              Configurar Seguridad
+            <button
+              onClick={handleResetPassword}
+              disabled={isSending}
+              className="w-full flex items-center justify-center gap-2 p-4 bg-gray-800/50 hover:bg-gray-800 text-white rounded-2xl border border-gray-700 transition-all text-sm font-medium disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              {isSending ? (
+                <div className="animate-spin h-4 w-4 border-2 border-white/30 border-t-white rounded-full" />
+              ) : (
+                <Lock size={16} />
+              )}
+              {isSending ? "Enviando enlace..." : "Cambiar Contraseña"}
             </button>
           </div>
 
