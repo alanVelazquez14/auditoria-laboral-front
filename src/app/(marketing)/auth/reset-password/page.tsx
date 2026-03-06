@@ -1,33 +1,42 @@
 "use client";
+
+import { useState, useEffect } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
-import { useState } from "react";
-import { ArrowLeft, Lock } from "lucide-react";
+import { Lock, Eye, EyeOff, CheckCircle2 } from "lucide-react";
 import { toast } from "sonner";
-import Link from "next/link"; // Asegurate de importar el Link de next/link, no de lucide-react
 
 export default function ResetPasswordPage() {
   const searchParams = useSearchParams();
-  const token = searchParams.get("token");
   const router = useRouter();
+  const token = searchParams.get("token"); // Capturamos el ?token=...
 
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
+  const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [success, setSuccess] = useState(false);
 
-  const handleReset = async (e: React.FormEvent) => {
+  useEffect(() => {
+    if (!token) {
+      toast.error("Token no válido", { description: "Regresando al login..." });
+      router.push("/auth");
+    }
+  }, [token, router]);
+
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
     if (password !== confirmPassword) {
       return toast.error("Las contraseñas no coinciden");
     }
 
-    if (!token) {
-      return toast.error("Token de recuperación no encontrado");
+    if (password.length < 6) {
+      return toast.error("La contraseña debe tener al menos 6 caracteres");
     }
 
-    setLoading(true);
     try {
-      const res = await fetch(
+      setLoading(true);
+      const response = await fetch(
         `${process.env.NEXT_PUBLIC_API_URL}/api/users/reset-password`,
         {
           method: "POST",
@@ -36,51 +45,67 @@ export default function ResetPasswordPage() {
         },
       );
 
-      if (res.ok) {
-        toast.success("¡Contraseña actualizada con éxito!");
-        router.push("/auth");
-      } else {
-        const data = await res.json();
-        toast.error(data.message || "El link expiró o es inválido.");
-      }
-    } catch (error) {
-      toast.error("Error de conexión con el servidor.");
+      const data = await response.json();
+
+      if (!response.ok) throw new Error(data.message || "Error al restablecer");
+
+      setSuccess(true);
+      toast.success("¡Contraseña actualizada!");
+
+      setTimeout(() => router.push("/auth"), 3000);
+    } catch (err: any) {
+      toast.error(err.message);
     } finally {
       setLoading(false);
     }
   };
 
-  return (
-    <div className="min-h-screen bg-background flex items-center justify-center p-6 text-white">
-      <div className="bg-card-bg border border-gray-800 p-8 rounded-2xl w-full max-w-md shadow-2xl">
-        <header className="mb-6">
-          <h2 className="text-2xl font-bold text-white mb-2">
-            Nueva Contraseña
-          </h2>
-          <p className="text-gray-400 text-sm">
-            Estás a un paso de recuperar tu cuenta. Ingresá tu nueva clave.
-          </p>
-        </header>
+  if (success) {
+    return (
+      <div className="flex flex-col items-center justify-center min-h-[60vh] text-center space-y-4 animate-in fade-in zoom-in duration-300">
+        <CheckCircle2 size={64} className="text-brand-purple" />
+        <h1 className="text-2xl font-bold text-white">¡Todo listo!</h1>
+        <p className="text-gray-400">
+          Tu contraseña ha sido actualizada. <br /> Redirigiéndote al inicio de
+          sesión...
+        </p>
+      </div>
+    );
+  }
 
-        <form onSubmit={handleReset} className="space-y-4">
-          {/* Nueva Contraseña */}
+  return (
+    <div className="max-w-md mx-auto mt-10 p-8 bg-card-bg border border-gray-800 rounded-2xl shadow-xl">
+      <h1 className="text-2xl font-bold text-white mb-2">Nueva contraseña</h1>
+      <p className="text-gray-400 text-sm mb-8">
+        Ingresa tu nueva clave para acceder a tu cuenta de DepurApp.
+      </p>
+
+      <form onSubmit={handleSubmit} className="space-y-6">
+        <div className="space-y-4">
+          {/* Input Contraseña */}
           <div className="relative">
             <Lock
               className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500"
               size={18}
             />
             <input
-              type="password"
-              required
-              minLength={6}
-              className="w-full pl-10 p-3 bg-[#1a1a24] border border-gray-700 rounded-xl text-white focus:border-brand-purple outline-none transition-all"
+              type={showPassword ? "text" : "password"}
               placeholder="Nueva contraseña"
+              className="w-full p-3 pl-10 pr-10 rounded-lg bg-[#1a1a24] border border-gray-700 focus:border-brand-purple outline-none text-white transition-all"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
+              required
             />
+            <button
+              type="button"
+              onClick={() => setShowPassword(!showPassword)}
+              className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 hover:text-white"
+            >
+              {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+            </button>
           </div>
 
-          {/* Confirmar Contraseña */}
+          {/* Input Confirmar */}
           <div className="relative">
             <Lock
               className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500"
@@ -88,30 +113,23 @@ export default function ResetPasswordPage() {
             />
             <input
               type="password"
-              required
-              className="w-full pl-10 p-3 bg-[#1a1a24] border border-gray-700 rounded-xl text-white focus:border-brand-purple outline-none transition-all"
               placeholder="Confirmar contraseña"
+              className="w-full p-3 pl-10 rounded-lg bg-[#1a1a24] border border-gray-700 focus:border-brand-purple outline-none text-white transition-all"
               value={confirmPassword}
               onChange={(e) => setConfirmPassword(e.target.value)}
+              required
             />
           </div>
+        </div>
 
-          <button
-            type="submit"
-            disabled={loading || !token}
-            className="w-full py-3 bg-brand-purple text-white rounded-xl font-bold hover:opacity-90 active:scale-[0.98] transition-all disabled:opacity-50 disabled:cursor-not-allowed shadow-lg shadow-brand-purple/20"
-          >
-            {loading ? "Actualizando..." : "Restablecer Contraseña"}
-          </button>
-        </form>
-
-        <Link
-          href="/auth"
-          className="mt-6 flex items-center justify-center gap-2 text-sm text-gray-500 hover:text-white transition-colors"
+        <button
+          type="submit"
+          disabled={loading}
+          className="w-full p-3 rounded-lg font-bold bg-brand-purple hover:bg-[#6d28d9] text-white transition-all shadow-lg shadow-purple-500/20 disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
         >
-          <ArrowLeft size={14} /> Volver al login
-        </Link>
-      </div>
+          {loading ? "Actualizando..." : "Restablecer contraseña"}
+        </button>
+      </form>
     </div>
   );
 }

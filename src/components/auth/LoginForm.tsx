@@ -3,10 +3,12 @@ import { Mail, Lock } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import { signIn } from "next-auth/react";
+import { ForgotPasswordModal } from "./ForgotPasswordModal";
 
 export const LoginForm = () => {
   const [loginData, setLoginData] = useState({ email: "", password: "" });
   const [loading, setLoading] = useState(false);
+  const [isModalOpen, setIsModalOpen] = useState(false);
   const router = useRouter();
 
   const handleLogin = async (e: React.FormEvent) => {
@@ -37,66 +39,71 @@ export const LoginForm = () => {
     "w-full p-3 rounded-lg font-bold transition-all transform hover:scale-105 active:scale-95 text-white";
 
   return (
-    <form onSubmit={handleLogin} className="space-y-6">
-      <div>
-        <label htmlFor="email_login" className="sr-only">
-          Correo Electrónico
-        </label>
-        <div className="relative">
-          <Mail
-            className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500"
-            size={20}
-          />
-          <input
-            type="email"
-            id="email_login"
-            placeholder="Correo Electrónico"
-            value={loginData.email}
-            onChange={(e) =>
-              setLoginData({ ...loginData, email: e.target.value })
-            }
-            className={`${inputClasses} pl-10`}
-          />
+    <>
+      <form onSubmit={handleLogin} className="space-y-6">
+        <div>
+          <label htmlFor="email_login" className="sr-only">
+            Correo Electrónico
+          </label>
+          <div className="relative">
+            <Mail
+              className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500"
+              size={20}
+            />
+            <input
+              type="email"
+              id="email_login"
+              placeholder="Correo Electrónico"
+              value={loginData.email}
+              onChange={(e) =>
+                setLoginData({ ...loginData, email: e.target.value })
+              }
+              className={`${inputClasses} pl-10`}
+            />
+          </div>
         </div>
-      </div>
-      <div>
-        <label htmlFor="password_login" className="sr-only">
-          Contraseña
-        </label>
-        <div className="relative">
-          <Lock
-            className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500"
-            size={20}
-          />
-          <input
-            type="password"
-            id="password_login"
-            placeholder="Contraseña"
-            value={loginData.password}
-            onChange={(e) =>
-              setLoginData({ ...loginData, password: e.target.value })
-            }
-            className={`${inputClasses} pl-10`}
-          />
+        <div>
+          <label htmlFor="password_login" className="sr-only">
+            Contraseña
+          </label>
+          <div className="relative">
+            <Lock
+              className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500"
+              size={20}
+            />
+            <input
+              type="password"
+              id="password_login"
+              placeholder="Contraseña"
+              value={loginData.password}
+              onChange={(e) =>
+                setLoginData({ ...loginData, password: e.target.value })
+              }
+              className={`${inputClasses} pl-10`}
+            />
+          </div>
         </div>
-      </div>
-      <div className="flex justify-end text-sm">
+        <div className="flex justify-end text-sm">
+          <button
+            type="button"
+            onClick={() => setIsModalOpen(true)}
+            className="text-gray-500 hover:text-purple-400 transition-colors cursor-pointer"
+          >
+            ¿Olvidaste tu contraseña?
+          </button>
+        </div>
         <button
-          type="button"
-          onClick={() => router.push("/forgot-password")}
-          className="text-gray-500 hover:text-purple-400 transition-colors"
+          type="submit"
+          disabled={loading}
+          style={{ backgroundColor: loading ? "#334155" : "#0891b2" }}
+          className={`${buttonClasses} shadow-lg shadow-cyan-500/20 cursor-pointer`}
         >
-          ¿Olvidaste tu contraseña?
+          {loading ? "Iniciando..." : "Iniciar Sesión"}
         </button>
-      </div>
-      <button
-        type="submit"
-        disabled={loading}
-        style={{ backgroundColor: loading ? "#334155" : "#0891b2" }}
-        className={`${buttonClasses} shadow-lg shadow-cyan-500/20`}
-      >
-        {loading ? "Iniciando..." : "Iniciar Sesión"}
-      </button>
-    </form>
+      </form>
+      {isModalOpen && (
+        <ForgotPasswordModal onClose={() => setIsModalOpen(false)} />
+      )}
+    </>
   );
 };
