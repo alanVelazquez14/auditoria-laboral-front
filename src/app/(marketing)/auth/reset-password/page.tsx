@@ -123,11 +123,20 @@ function ResetPasswordContent() {
 export default function ResetPasswordPage() {
   return (
     <div className="mt-10">
-      <Suspense
-        fallback={<div className="text-center text-white">Cargando...</div>}
-      >
+      <Suspense fallback={<ResetPasswordLoader />}>
         <ResetPasswordContent />
       </Suspense>
+    </div>
+  );
+}
+
+function ResetPasswordLoader() {
+  return (
+    <div className="flex flex-col items-center space-y-4">
+      <div className="w-12 h-12 border-4 border-gray-800 border-t-brand-purple rounded-full animate-spin"></div>
+      <p className="text-gray-400 animate-pulse">
+        Preparando restablecimiento...
+      </p>
     </div>
   );
 }
