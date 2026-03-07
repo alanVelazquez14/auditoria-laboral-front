@@ -14,9 +14,6 @@ export default function ProfileContainer() {
   const token = session?.accessToken;
 
   useEffect(() => {
-    console.log("Intentando fetch con:");
-    console.log("ID:", userId);
-    console.log("Token:", token);
     const fetchUser = async () => {
       if (status !== "authenticated" || !userId || !token) {
         if (status === "unauthenticated") setLoading(false);
