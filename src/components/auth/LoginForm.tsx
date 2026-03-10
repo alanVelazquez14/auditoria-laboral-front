@@ -4,6 +4,7 @@ import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import { signIn } from "next-auth/react";
 import { ForgotPasswordModal } from "./ForgotPasswordModal";
+import { handleApiError } from "@/utils/error-handler";
 
 export const LoginForm = () => {
   const [loginData, setLoginData] = useState({ email: "", password: "" });
@@ -22,21 +23,7 @@ export const LoginForm = () => {
     });
 
     if (result?.error) {
-      if (result.error.includes("Too Many Requests")) {
-        toast.error("Demasiados intentos", {
-          description:
-            "Por seguridad, pausamos los intentos desde tu conexión. Espera unos minutos.",
-          style: {
-            border: "1px solid #7c3aed",
-            background: "#121217",
-            color: "#fff",
-          },
-        });
-      } else {
-        toast.error("Error de acceso", {
-          description: result.error || "Email o contraseña incorrectos.",
-        });
-      }
+      handleApiError(result.error, "Error de acceso");
       setLoading(false);
     } else {
       toast.success("¡Bienvenido de nuevo!");

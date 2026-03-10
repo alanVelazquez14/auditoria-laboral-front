@@ -11,8 +11,12 @@ import { useState, useRef } from "react";
 import { toast } from "sonner";
 import AnalysisReport from "./AnalysisReport";
 import { getSession } from "next-auth/react";
+import { handleApiError } from "@/utils/error-handler";
+import DiagnosticQuota from "./DiagnosticQuota";
 
 export default function CV({ userData }: { userData: any }) {
+  const [refreshQuota, setRefreshQuota] = useState(0);
+  const [remainingCredits, setRemainingCredits] = useState<number | null>(null);
   const [isUploading, setIsUploading] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [mockResult, setMockResult] = useState<any>(
@@ -22,9 +26,16 @@ export default function CV({ userData }: { userData: any }) {
     "idle" | "analyzing" | "done"
   >(userData.lastAnalysis ? "done" : "idle");
 
+  const isButtonDisabled =
+    isUploading || (remainingCredits !== null && remainingCredits <= 0);
+
   const handleFileSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
+
+    if (file.size > 5 * 1024 * 1024) {
+      return toast.error("Archivo muy pesado", { description: "Máximo 5MB" });
+    }
 
     const formData = new FormData();
     formData.append("file", file);
@@ -47,18 +58,20 @@ export default function CV({ userData }: { userData: any }) {
         },
       );
 
-      if (!response.ok) throw new Error("Error en la subida");
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw errorData;
+      }
 
       const result = await response.json();
 
       setMockResult(result);
-
       setAnalysisStatus("done");
-
+      setRefreshQuota((prev) => prev + 1);
       toast.success("¡CV analizado con éxito!");
     } catch (error) {
       setAnalysisStatus("idle");
-      toast.error("Hubo un problema al procesar tu archivo");
+      handleApiError(error, "Error al procesar");
     } finally {
       setIsUploading(false);
     }
@@ -66,6 +79,10 @@ export default function CV({ userData }: { userData: any }) {
 
   return (
     <section className="bg-card-bg border border-gray-800 p-8 rounded-2xl shadow-sm space-y-6">
+      <DiagnosticQuota
+        refreshTrigger={refreshQuota}
+        onQuotaChange={(count) => setRemainingCredits(count)}
+      />
       {/* Header */}
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-2 text-white font-bold text-lg">
@@ -148,18 +165,46 @@ export default function CV({ userData }: { userData: any }) {
 
           <button
             onClick={() => fileInputRef.current?.click()}
-            disabled={isUploading}
-            className="w-full py-4 bg-brand-purple/10 border border-brand-purple/20 text-brand-purple hover:bg-brand-purple hover:text-white rounded-2xl text-sm font-bold transition-all flex items-center justify-center gap-2 cursor-pointer disabled:opacity-50"
+            disabled={isButtonDisabled}
+            className={`w-full py-4 border rounded-2xl text-sm font-bold transition-all flex items-center justify-center gap-2 
+          ${
+            isButtonDisabled
+              ? "bg-gray-800/50 border-gray-700 text-gray-500 cursor-not-allowed opacity-70"
+              : "bg-brand-purple/10 border-brand-purple/20 text-brand-purple hover:bg-brand-purple hover:text-white cursor-pointer"
+          }`}
           >
-            <Upload size={16} />
-            {userData.cvUrl
-              ? "Reemplazar y Re-analizar CV"
-              : "Subir Currículum (PDF)"}
+            {isUploading ? (
+              <Loader2 className="animate-spin" />
+            ) : remainingCredits === 0 ? (
+              <AlertCircle size={16} />
+            ) : (
+              <Upload size={16} />
+            )}
+
+            {isUploading
+              ? "Analizando..."
+              : remainingCredits === 0
+                ? "Límite diario alcanzado"
+                : userData.cvUrl
+                  ? "Reemplazar y Re-analizar CV"
+                  : "Subir Currículum (PDF)"}
           </button>
+          {remainingCredits !== null && (
+            <div className="flex justify-between items-center px-1 opacity-60">
+              <span className="text-[13px] uppercase tracking-tighter text-gray-500 font-medium">
+                Créditos disponibles
+              </span>
+              <span
+                className={`text-[13px] font-bold ${remainingCredits > 0 ? "text-brand-purple" : "text-red-500"}`}
+              >
+                {remainingCredits} / 5
+              </span>
+            </div>
+          )}
         </>
       )}
 
-      <p className="text-[10px] text-gray-600 text-center uppercase tracking-widest mt-4">
+      <p className="text-[12px] text-gray-600 text-center uppercase tracking-widest mt-4">
         Optimizado para filtros ATS e Inteligencia Artificial
       </p>
     </section>
