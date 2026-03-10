@@ -58,6 +58,10 @@ const handler = NextAuth({
 
         const data = await res.json();
 
+        if (!res.ok) {
+          throw new Error(data.message || "Error al iniciar sesión");
+        }
+
         if (res.ok && data.user) {
           return {
             ...data.user,

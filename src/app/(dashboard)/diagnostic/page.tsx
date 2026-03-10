@@ -1,13 +1,14 @@
 "use client";
 import { useDiagnostics } from "@/hooks/useDiagnostics";
 import { useRouter } from "next/navigation";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useSession } from "next-auth/react";
 import { CheckCircle2, XCircle, ChevronDown, Rocket } from "lucide-react";
 import { StatCard } from "@/components/diagnosticPage/StatCard";
 import { getIcon, getIconColor } from "@/components/diagnosticPage/GetIcon";
 import PageTransition from "@/components/PageTransition";
 import { ISSUE_LABELS } from "@/lib/diagnosticLabels";
+import { TechnicalHealthCard } from "@/components/diagnosticPage/TechnicalHealthCard";
 
 export interface Diagnostic {
   id: string;
@@ -31,6 +32,23 @@ export default function DiagnosticsPage() {
   const router = useRouter();
   const { data, loading, generateNew } = useDiagnostics();
   const [expandedId, setExpandedId] = useState<string | null>(null);
+
+  const [analysis, setAnalysis] = useState<any>(null);
+
+  useEffect(() => {
+    if (!session?.user?.id) return;
+
+    const fetchUser = async () => {
+      const res = await fetch(
+        `${process.env.NEXT_PUBLIC_API_URL}/api/users/${session.user.id}`,
+      );
+      const user = await res.json();
+
+      setAnalysis(user.lastAnalysis);
+    };
+
+    fetchUser();
+  }, [session]);
 
   const diagnostics = useMemo(() => {
     const currentServerDiags = Array.isArray(data)
@@ -111,6 +129,7 @@ export default function DiagnosticsPage() {
             )}
           </button>
         </header>
+        <TechnicalHealthCard analysis={analysis} />
 
         {/* --- STATS GRID --- */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-10">

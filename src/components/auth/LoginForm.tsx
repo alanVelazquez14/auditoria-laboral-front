@@ -22,12 +22,24 @@ export const LoginForm = () => {
     });
 
     if (result?.error) {
-      toast.error("Email o contraseña incorrectos", {
-        description: "Por favor, verifica tus datos e intenta nuevamente.",
-      });
+      if (result.error.includes("Too Many Requests")) {
+        toast.error("Demasiados intentos", {
+          description:
+            "Por seguridad, pausamos los intentos desde tu conexión. Espera unos minutos.",
+          style: {
+            border: "1px solid #7c3aed",
+            background: "#121217",
+            color: "#fff",
+          },
+        });
+      } else {
+        toast.error("Error de acceso", {
+          description: result.error || "Email o contraseña incorrectos.",
+        });
+      }
       setLoading(false);
     } else {
-      toast.success("¡Acceso exitoso!");
+      toast.success("¡Bienvenido de nuevo!");
       router.push("/home");
       router.refresh();
     }
