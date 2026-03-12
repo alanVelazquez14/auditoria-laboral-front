@@ -135,6 +135,7 @@ export default function CV({ userData }: { userData: any }) {
               <a
                 href={userData.cvUrl}
                 target="_blank"
+                rel="noopener noreferrer"
                 className="p-2 text-gray-400 hover:text-brand-purple transition-colors"
                 title="Ver PDF"
               >

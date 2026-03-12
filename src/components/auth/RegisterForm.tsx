@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { User, Mail, Lock } from "lucide-react";
+import { User, Mail, Lock, UserPlus } from "lucide-react";
 import { toast } from "sonner";
 
 interface RegisterFormProps {
@@ -7,16 +7,20 @@ interface RegisterFormProps {
 }
 
 const RegisterForm = ({ onSuccess }: RegisterFormProps) => {
-  const [registerData, setRegisterData] = useState({
+  const initialState = {
     fullName: "",
     email: "",
     password: "",
-  });
+  };
+  const [registerData, setRegisterData] = useState(initialState);
   const [errorMessage, setErrorMessage] = useState("");
+  const [isLoading, setIsLoading] = useState(false);
 
   const handleRegister = async (e: React.FormEvent) => {
     e.preventDefault();
     setErrorMessage("");
+    setIsLoading(true);
+
     try {
       const response = await fetch(
         `${process.env.NEXT_PUBLIC_API_URL}/api/users/register`,
@@ -36,24 +40,25 @@ const RegisterForm = ({ onSuccess }: RegisterFormProps) => {
         return;
       }
 
-      if (response.ok) {
-        localStorage.setItem("userId", data.id);
-        localStorage.setItem("token", data.token);
+      toast.success("¡Cuenta creada con éxito!", {
+        description: "Ahora puedes ingresar con tus credenciales.",
+      });
 
-        if (onSuccess) onSuccess(data.id);
-      }
-      // Registro exitoso
-      toast.success("Registro exitoso!");
+      setRegisterData(initialState);
+
       if (onSuccess) onSuccess(data.id);
     } catch (error: any) {
       setErrorMessage(error.message || "Error inesperado");
+      toast.error("Hubo un problema con el registro");
+    } finally {
+      setIsLoading(false);
     }
   };
 
   const inputClasses =
     "w-full p-3 rounded-lg bg-[#1a1a24] border border-gray-700 focus:border-purple-500 focus:ring-1 focus:ring-purple-500 outline-none text-white placeholder-gray-500 transition-colors";
   const buttonClasses =
-    "w-full p-3 rounded-lg font-bold transition-all transform hover:scale-105 active:scale-95 text-white";
+    "w-full p-3 rounded-lg font-bold transition-all transform hover:scale-105 active:scale-95 text-white flex items-center justify-center gap-2";
 
   return (
     <form className="space-y-6">
@@ -128,10 +133,14 @@ const RegisterForm = ({ onSuccess }: RegisterFormProps) => {
         {errorMessage && <p className="text-red-500 text-sm">{errorMessage}</p>}
       </div>
       <button
-        type="button"
+        type="submit"
         onClick={handleRegister}
-        className={`${buttonClasses} bg-purple-600 hover:bg-purple-700 shadow-lg shadow-purple-500/20 cursor-pointer`}
+        className={`${buttonClasses} bg-purple-600 hover:bg-purple-700 shadow-lg shadow-purple-500/20 cursor-pointer group`}
       >
+        <UserPlus
+          size={18}
+          className="group-hover:scale-110 group-hover:rotate-3 transition-transform duration-300"
+        />
         Registrarse
       </button>
     </form>

@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Mail, Lock } from "lucide-react";
+import { Mail, Lock, LogIn, Loader2 } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import { signIn } from "next-auth/react";
@@ -35,7 +35,7 @@ export const LoginForm = () => {
   const inputClasses =
     "w-full p-3 rounded-lg bg-[#1a1a24] border border-gray-700 focus:border-purple-500 focus:ring-1 focus:ring-purple-500 outline-none text-white placeholder-gray-500 transition-colors";
   const buttonClasses =
-    "w-full p-3 rounded-lg font-bold transition-all transform hover:scale-105 active:scale-95 text-white";
+    "w-full p-3 rounded-lg font-bold transition-all transform hover:scale-105 active:scale-95 text-white flex items-center justify-center gap-2";
 
   return (
     <>
@@ -94,9 +94,17 @@ export const LoginForm = () => {
         <button
           type="submit"
           disabled={loading}
+          className={`${buttonClasses} shadow-lg shadow-cyan-500/20 cursor-pointer group`}
           style={{ backgroundColor: loading ? "#334155" : "#0891b2" }}
-          className={`${buttonClasses} shadow-lg shadow-cyan-500/20 cursor-pointer`}
         >
+          {loading ? (
+            <Loader2 size={18} className="animate-spin" />
+          ) : (
+            <LogIn
+              size={18}
+              className="group-hover:translate-x-1 transition-transform duration-300"
+            />
+          )}
           {loading ? "Iniciando..." : "Iniciar Sesión"}
         </button>
       </form>

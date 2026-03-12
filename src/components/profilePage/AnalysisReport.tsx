@@ -5,7 +5,7 @@ import AtsGuideModal from "./AtsGuideModal";
 
 export default function AnalysisReport({ data }: { data: any }) {
   const [isGuideOpen, setIsGuideOpen] = useState(false);
-  
+
   const getScoreColor = (score: number) => {
     if (score < 50) return "text-red-500";
     if (score < 80) return "text-yellow-500";
@@ -80,7 +80,7 @@ export default function AnalysisReport({ data }: { data: any }) {
 
         <button
           onClick={() => setIsGuideOpen(true)}
-          className="w-full flex items-center justify-center gap-2 text-[11px] text-gray-500 hover:text-white transition-colors py-2 uppercase tracking-widest font-bold cursor-pointer"
+          className="w-full flex items-center justify-center gap-2 text-[11px] text-gray-500 hover:text-brand-purple hover:bg-brand-purple/5 transition-all py-3 rounded-xl uppercase tracking-widest font-bold cursor-pointer border border-transparent hover:border-brand-purple/20"
         >
           ¿Cómo mejorar este puntaje? <ArrowUpRight size={14} />
         </button>
