@@ -4,11 +4,9 @@ import { Lock } from "lucide-react";
 import { useState } from "react";
 import { toast } from "sonner";
 import PhotoAndData from "./PhotoAndData";
-import Stack from "./Stack";
 import CV from "./CV";
 import BasicInfoModal from "./BasicInfoModal";
 import { useSession } from "next-auth/react";
-import CareerMetrics from "./CareerMetrics";
 
 export default function ProfilePage({ userData }: { userData: any }) {
   const { data: session } = useSession();
@@ -144,12 +142,6 @@ export default function ProfilePage({ userData }: { userData: any }) {
           <div className="lg:col-span-2 space-y-6">
             {/* Gestión de CV */}
             <CV userData={profileData} />
-
-            {/* Gestión de Stack Tecnológico */}
-            <Stack userData={profileData} />
-
-            {/* Métricas de Carrera */}
-            <CareerMetrics userData={profileData} />
           </div>
         </div>
       </div>
