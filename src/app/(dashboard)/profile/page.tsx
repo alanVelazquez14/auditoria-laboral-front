@@ -64,7 +64,7 @@ export default function ProfileContainer() {
 
   if (status === "unauthenticated") {
     return (
-      <div className="flex items-center justify-center min-h-screen text-white bg-background">
+      <div className="flex items-center justify-center min-h-screen text-white">
         <p>No tienes acceso a esta página.</p>
       </div>
     );
