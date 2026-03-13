@@ -2,7 +2,14 @@
 
 import { useSession } from "next-auth/react";
 import { useEffect, useMemo, useState } from "react";
-import { Plus, Search, LayoutGrid, List } from "lucide-react";
+import {
+  Plus,
+  Search,
+  LayoutGrid,
+  List,
+  ChevronLeft,
+  ChevronRight,
+} from "lucide-react";
 import { ApplicationCard } from "@/components/applicationPage/ApplicationCard";
 import NewApplicationModal from "@/components/applicationPage/NewApplicationModal";
 import { ViewDetailsModal } from "@/components/applicationPage/ViewDetailsModal";
@@ -30,14 +37,6 @@ const STATUS_FILTERS = [
   { label: "Oferta", value: "HIRED" },
 ];
 
-const STATUS_MAP: Record<string, { label: string; color: string }> = {
-  APPLIED: { label: "Aplicada", color: "bg-purple-500/10 text-purple-400" },
-  REVIEWING: { label: "En proceso", color: "bg-blue-500/10 text-blue-400" },
-  INTERVIEW: { label: "Entrevista", color: "bg-cyan-500/10 text-cyan-400" },
-  REJECTED: { label: "Rechazada", color: "bg-red-500/10 text-red-400" },
-  HIRED: { label: "Oferta", color: "bg-green-500/10 text-green-400" },
-};
-
 export default function ApplicationsPage() {
   const { data: session, status } = useSession();
   const [apps, setApps] = useState<JobApplication[]>([]);
@@ -46,6 +45,9 @@ export default function ApplicationsPage() {
   const [searchTerm, setSearchTerm] = useState("");
   const [viewMode, setViewMode] = useState<"grid" | "list">("grid");
   const [selectedApp, setSelectedApp] = useState<JobApplication | null>(null);
+
+  const [currentPage, setCurrentPage] = useState(1);
+  const itemsPerPage = 9;
 
   const fetchApps = async () => {
     if (!session?.user?.id) return;
@@ -79,44 +81,45 @@ export default function ApplicationsPage() {
       );
   }, [apps, filter, searchTerm]);
 
+  // Lógica de Paginación
+  const { currentItems, totalPages } = useMemo(() => {
+    const total = filteredApps.length;
+    const pages = Math.ceil(total / itemsPerPage);
+    const start = (currentPage - 1) * itemsPerPage;
+    const items = filteredApps.slice(start, start + itemsPerPage);
+
+    return { currentItems: items, totalPages: pages };
+  }, [filteredApps, currentPage]);
+
+  // Resetear a página 1 cuando se filtra o busca
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [filter, searchTerm]);
+
   const handleStatusChangeInList = async (appId: string, newStatus: string) => {
-    const currentApp = filteredApps.find((a) => a.id === appId);
+    const currentApp = apps.find((a) => a.id === appId);
 
     if (currentApp?.status === "REJECTED" && newStatus !== "REJECTED") {
       toast.error("Acción no permitida", {
-        description:
-          "No se puede mover una postulación que ya ha sido rechazada.",
+        description: "No se puede mover una postulación rechazada.",
         duration: 4000,
       });
       return;
     }
 
-    if (currentApp?.status === "HIRED" && newStatus !== "HIRED") {
-      toast.error("¡Ya tienes la oferta!", {
-        description: "No puedes cambiar el estado de una postulación ganada.",
-        duration: 4000,
-      });
-      return;
-    }
-
-    const token = localStorage.getItem("token");
     try {
       const response = await fetch(
         `${process.env.NEXT_PUBLIC_API_URL}/api/job-applications/${appId}/status`,
         {
           method: "PATCH",
-          headers: {
-            "Content-Type": "application/json",
-          },
+          headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ status: newStatus }),
         },
       );
 
       if (response.ok) {
         fetchApps();
-        toast.success("Estado actualizado correctamente");
-      } else {
-        toast.error("Error al actualizar el estado");
+        toast.success("Estado actualizado");
       }
     } catch (error) {
       console.error("Error:", error);
@@ -129,9 +132,11 @@ export default function ApplicationsPage() {
     return "text-red-500";
   };
 
+  const pageNumbers = Array.from({ length: totalPages }, (_, i) => i + 1);
+
   return (
     <PageTransition>
-      <div className="max-w-7xl mx-10 space-y-8">
+      <div className="max-w-7xl mx-10 space-y-8 pb-10">
         {/* Header */}
         <header className="flex justify-between items-end">
           <div>
@@ -141,7 +146,6 @@ export default function ApplicationsPage() {
             <p className="text-gray-500 text-sm">{apps.length} registradas</p>
           </div>
           <div className="flex gap-3">
-            {/* Botones de Toggle de Vista (Grid/List) */}
             <div className="flex bg-[#111118] border border-white/5 rounded-xl p-1">
               <button
                 onClick={() => setViewMode("grid")}
@@ -165,7 +169,7 @@ export default function ApplicationsPage() {
           </div>
         </header>
 
-        {/* Banner Informativo */}
+        {/* Banner */}
         <div className="bg-[#111118] border border-white/5 px-5 py-4 rounded-2xl italic text-gray-500 text-sm">
           <p className="text-[15px]">
             Si no registras tus postulaciones, el sistema no puede ayudarte.
@@ -204,10 +208,10 @@ export default function ApplicationsPage() {
           </div>
         </div>
 
-        {/* Contenido Dinámico (Grid o Tabla) */}
+        {/* Contenido Dinámico */}
         {viewMode === "grid" ? (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {filteredApps.map((app) => (
+            {currentItems.map((app) => (
               <ApplicationCard
                 key={app.id}
                 app={app}
@@ -216,7 +220,7 @@ export default function ApplicationsPage() {
             ))}
           </div>
         ) : (
-          <div className="bg-[#111118] border border-white/5 rounded-2xl">
+          <div className="bg-[#111118] border border-white/5 rounded-2xl overflow-hidden">
             <table className="w-full text-left text-sm border-collapse">
               <thead className="bg-white/2 text-gray-500 uppercase text-[10px] font-bold tracking-wider">
                 <tr>
@@ -228,66 +232,98 @@ export default function ApplicationsPage() {
                 </tr>
               </thead>
               <tbody className="divide-y divide-white/5">
-                {filteredApps.map((app) => {
-                  const statusInfo = STATUS_MAP[app.status] || {
-                    label: app.status,
-                    color: "bg-gray-500/10 text-gray-400",
-                  };
-
-                  return (
-                    <tr
-                      key={app.id}
-                      className="hover:bg-white/2 transition-colors group"
+                {currentItems.map((app) => (
+                  <tr
+                    key={app.id}
+                    className="hover:bg-white/2 transition-colors group"
+                  >
+                    <td className="px-6 py-4">
+                      <div className="text-white font-medium">
+                        {app.companyName}
+                      </div>
+                      <div className="text-gray-500 text-xs">
+                        {app.position}
+                      </div>
+                    </td>
+                    <td className="px-6 py-4">
+                      <StatusDropdown
+                        currentStatus={app.status}
+                        onChange={(newStatus) =>
+                          handleStatusChangeInList(app.id, newStatus)
+                        }
+                      />
+                    </td>
+                    <td
+                      className={`px-6 py-4 font-bold ${getMatchColor(app.matchLevel || 0)}`}
                     >
-                      <td className="px-6 py-4">
-                        <div className="text-white font-medium">
-                          {app.companyName}
-                        </div>
-                        <div className="text-gray-500 text-xs">
-                          {app.position}
-                        </div>
-                      </td>
-
-                      <td className="px-6 py-4">
-                        <StatusDropdown
-                          currentStatus={app.status}
-                          onChange={(newStatus) =>
-                            handleStatusChangeInList(app.id, newStatus)
-                          }
-                        />
-                      </td>
-
-                      <td
-                        className={`px-6 py-4 font-bold ${getMatchColor(app.matchLevel || 0)}`}
+                      {(app.matchLevel || 0) * 10}%
+                    </td>
+                    <td className="px-6 py-4 text-gray-500">
+                      {new Date(app.appliedAt).toLocaleDateString()}
+                    </td>
+                    <td className="px-6 py-4 text-right">
+                      <button
+                        onClick={() => setSelectedApp(app)}
+                        className="text-gray-600 hover:text-white transition-colors cursor-pointer text-xs font-bold"
                       >
-                        {(app.matchLevel || 0) * 10}%
-                      </td>
-                      <td className="px-6 py-4 text-gray-500">
-                        {new Date(app.appliedAt).toLocaleDateString()}
-                      </td>
-                      <td className="px-6 py-4 text-right">
-                        <button
-                          onClick={() => setSelectedApp(app)}
-                          className="text-gray-600 hover:text-white transition-colors cursor-pointer text-xs font-bold"
-                        >
-                          Ver detalle
-                        </button>
-                      </td>
-                    </tr>
-                  );
-                })}
+                        Ver detalle
+                      </button>
+                    </td>
+                  </tr>
+                ))}
               </tbody>
             </table>
           </div>
         )}
 
+        {/* Paginación UI */}
+        {totalPages > 1 && (
+          <div className="flex justify-center items-center gap-3 pt-8">
+            {/* Botón Anterior */}
+            <button
+              onClick={() => setCurrentPage((prev) => Math.max(prev - 1, 1))}
+              disabled={currentPage === 1}
+              className="p-2 rounded-lg bg-white/5 border border-white/10 text-gray-400 hover:text-white disabled:opacity-20 disabled:cursor-not-allowed transition-all"
+            >
+              <ChevronLeft size={18} />
+            </button>
+
+            {/* Números de Página */}
+            <div className="flex gap-2">
+              {pageNumbers.map((number) => (
+                <button
+                  key={number}
+                  onClick={() => setCurrentPage(number)}
+                  className={`w-9 h-9 rounded-lg text-xs font-bold transition-all border cursor-pointer ${
+                    currentPage === number
+                      ? "bg-purple-600 border-purple-500 text-white shadow-lg shadow-purple-500/20"
+                      : "bg-white/5 border-white/5 text-gray-500 hover:border-white/20 hover:text-gray-300"
+                  }`}
+                >
+                  {number}
+                </button>
+              ))}
+            </div>
+
+            {/* Botón Siguiente */}
+            <button
+              onClick={() =>
+                setCurrentPage((prev) => Math.min(prev + 1, totalPages))
+              }
+              disabled={currentPage === totalPages}
+              className="p-2 rounded-lg bg-white/5 border border-white/10 text-gray-400 hover:text-white disabled:opacity-20 disabled:cursor-not-allowed transition-all cursor-pointer"
+            >
+              <ChevronRight size={18} />
+            </button>
+          </div>
+        )}
+        {/* Modales */}
         {selectedApp && (
           <ViewDetailsModal
             app={selectedApp}
             onClose={() => setSelectedApp(null)}
           />
         )}
-
         <NewApplicationModal
           isOpen={isModalOpen}
           onClose={() => setIsModalOpen(false)}
