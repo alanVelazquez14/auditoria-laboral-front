@@ -14,8 +14,8 @@ const FeatureCard = ({ icon: Icon, title, description }: { icon: any, title: str
 
 export default function AIUsage() {
   return (
-    <main className="min-h-screen bg-[#0a0a0f] py-12 px-4 sm:px-6">
-      <div className="max-w-5xl mx-auto space-y-12">
+    <main className="min-h-screen py-12 px-4 sm:px-6">
+      <div className="max-w-7xl mx-auto space-y-12">
         
         {/* Hero Section */}
         <div className="text-center space-y-4">
@@ -23,7 +23,7 @@ export default function AIUsage() {
             <BrainCircuit size={14} />
             Powered by AI Engine
           </div>
-          <h1 className="text-4xl md:text-5xl font-extrabold text-white italic tracking-tighter">
+          <h1 className="text-4xl md:text-5xl font-extrabold text-white tracking-tighter">
             Uso de <span className="text-brand-purple">Inteligencia Artificial</span>
           </h1>
           <p className="text-gray-500 max-w-2xl mx-auto text-sm md:text-base">
@@ -79,7 +79,7 @@ export default function AIUsage() {
               <h2>Servicios de Terceros</h2>
             </div>
             <p className="text-gray-400 text-sm leading-relaxed">
-              Para realizar este análisis de alto nivel, DepurApp utiliza servicios de IA de terceros (como Google Gemini o OpenAI). 
+              Para realizar este análisis de alto nivel, DepurApp utiliza servicios de IA de terceros. 
             </p>
             <p className="text-gray-400 text-sm leading-relaxed italic border-l-2 border-cyan-500 pl-4">
               El procesamiento de datos se realiza únicamente con el propósito de generar tu reporte. No compartimos tus datos para fines comerciales.
@@ -94,10 +94,10 @@ export default function AIUsage() {
           </p>
           <div className="flex justify-center gap-4">
             <Link 
-              href="/dashboard" 
+              href="/" 
               className="bg-brand-purple hover:bg-purple-700 text-white px-8 py-3 rounded-xl font-bold transition-all shadow-lg shadow-purple-500/20"
             >
-              Analizar mi CV ahora
+              Ingresar para Análisis de CV
             </Link>
           </div>
           <p className="text-[10px] text-gray-700 uppercase tracking-[0.2em] pt-8">

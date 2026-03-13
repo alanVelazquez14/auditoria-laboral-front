@@ -31,8 +31,8 @@ const CookieSection = ({
 
 export default function CookiesPolicy() {
   return (
-    <main className="min-h-screen bg-[#0a0a0f] py-12 px-4 sm:px-6">
-      <div className="max-w-4xl mx-auto space-y-8">
+    <main className="min-h-screen py-12 px-4 sm:px-6">
+      <div className="max-w-7xl mx-auto space-y-8">
         {/* Header */}
         <div className="text-center space-y-4 mb-12">
           <div className="flex justify-center mb-4">
@@ -40,7 +40,7 @@ export default function CookiesPolicy() {
               <Cookie size={32} />
             </div>
           </div>
-          <h1 className="text-4xl font-extrabold text-white italic tracking-tight">
+          <h1 className="text-4xl font-extrabold text-white tracking-tight">
             Política de <span className="text-blue-500">Cookies</span>
           </h1>
           <p className="text-gray-500 max-w-2xl mx-auto text-sm">
@@ -122,7 +122,7 @@ export default function CookiesPolicy() {
         {/* Botón de Retorno */}
         <div className="flex justify-center pt-8">
           <Link
-            href="/dashboard"
+            href="/"
             className="group flex items-center gap-2 text-gray-500 hover:text-white transition-colors text-sm font-bold italic"
           >
             Volver al Panel de Control

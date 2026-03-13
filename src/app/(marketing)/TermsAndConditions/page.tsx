@@ -32,11 +32,11 @@ const TermSection = ({
 
 export default function TermsAndConditions() {
   return (
-    <main className="min-h-screen bg-[#0a0a0f] py-12 px-4 sm:px-6">
-      <div className="max-w-4xl mx-auto space-y-8">
+    <main className="min-h-screen py-12 px-4 sm:px-6">
+      <div className="max-w-7xl mx-auto space-y-8">
         {/* Header */}
         <div className="text-center space-y-4 mb-12">
-          <h1 className="text-4xl font-extrabold text-white italic tracking-tight">
+          <h1 className="text-4xl font-extrabold text-white tracking-tight">
             Términos y <span className="text-cyan-500">Condiciones</span>
           </h1>
           <p className="text-gray-500 max-w-2xl mx-auto">
@@ -145,7 +145,7 @@ export default function TermsAndConditions() {
           </p>
           <div className="pt-2">
             <Link
-              href="/dashboard"
+              href="/"
               className="bg-cyan-600 hover:bg-cyan-700 text-white px-8 py-3 rounded-xl font-bold transition-all shadow-lg shadow-cyan-500/20"
             >
               Entendido

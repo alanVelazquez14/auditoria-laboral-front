@@ -16,7 +16,7 @@ const AuthView = () => {
     "w-full p-3 rounded-lg font-medium flex items-center justify-center gap-2 border border-gray-700 bg-[#1a1a24] hover:bg-gray-800 transition-colors";
 
   return (
-    <div className="text-white flex flex-col items-center justify-center">
+    <div className="text-white flex flex-col items-center justify-center mb-10">
       <div className="mb-6 w-full flex items-center justify-center gap-5 bg-[#1a1a24] rounded-lg p-2 border border-white/5 md:hidden">
         <button
           onClick={() => setActiveView("register")}

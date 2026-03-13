@@ -22,8 +22,8 @@ const ContactCard = ({ icon: Icon, title, detail, link, label }: { icon: any, ti
 
 export default function Contact() {
   return (
-    <main className="min-h-screen bg-[#0a0a0f] py-16 px-4 sm:px-6">
-      <div className="max-w-5xl mx-auto space-y-16">
+    <main className="min-h-screen py-16 px-4 sm:px-6">
+      <div className="max-w-7xl mx-auto space-y-16">
         
         {/* Header con estilo Dashboard */}
         <div className="text-center space-y-6">
@@ -80,7 +80,7 @@ export default function Contact() {
         {/* Footer simple */}
         <div className="text-center pt-8">
           <Link 
-            href="/dashboard" 
+            href="/" 
             className="text-gray-600 hover:text-brand-purple text-xs uppercase tracking-widest transition-colors"
           >
             ← Volver al Panel de Control
