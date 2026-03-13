@@ -149,13 +149,13 @@ export default function ApplicationsPage() {
             <div className="flex bg-[#111118] border border-white/5 rounded-xl p-1">
               <button
                 onClick={() => setViewMode("grid")}
-                className={`p-2 rounded-lg transition-all ${viewMode === "grid" ? "bg-white/10 text-purple-400" : "text-gray-500"}`}
+                className={`p-2 rounded-lg transition-all cursor-pointer ${viewMode === "grid" ? "bg-white/10 text-purple-400" : "text-gray-500"}`}
               >
                 <LayoutGrid size={18} />
               </button>
               <button
                 onClick={() => setViewMode("list")}
-                className={`p-2 rounded-lg transition-all ${viewMode === "list" ? "bg-white/10 text-purple-400" : "text-gray-500"}`}
+                className={`p-2 rounded-lg transition-all cursor-pointer ${viewMode === "list" ? "bg-white/10 text-purple-400" : "text-gray-500"}`}
               >
                 <List size={18} />
               </button>

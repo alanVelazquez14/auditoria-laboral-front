@@ -12,7 +12,7 @@ import {
   ChevronDown,
 } from "lucide-react";
 import { useRouter } from "next/navigation";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 
 export default function SupportPage() {
   const router = useRouter();
@@ -21,6 +21,7 @@ export default function SupportPage() {
   );
   const [isCustom, setIsCustom] = useState(false);
   const [currency, setCurrency] = useState<"ARS" | "USD">("ARS");
+  const [userCount, setUserCount] = useState<number | null>(null);
 
   const quickAmounts = [1000, 2500, 5000, 10000];
 
@@ -55,6 +56,28 @@ export default function SupportPage() {
     }
   };
 
+  const fetchUserCount = async () => {
+    try {
+      const response = await fetch(
+        `${process.env.NEXT_PUBLIC_API_URL}/api/users`,
+      );
+      if (response.ok) {
+        const data = await response.json();
+        if (Array.isArray(data)) {
+          setUserCount(data.length);
+        } else if (data.users && Array.isArray(data.users)) {
+          setUserCount(data.users.length);
+        }
+      }
+    } catch (error) {
+      console.error("Error al obtener usuarios:", error);
+    }
+  };
+
+  useEffect(() => {
+    fetchUserCount();
+  }, []);
+
   return (
     <PageTransition>
       <div className="text-white flex flex-col items-center py-5">
@@ -79,7 +102,11 @@ export default function SupportPage() {
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4 w-full max-w-7xl mb-16">
           <ImpactCard
             icon={Users}
-            value="1.2K+"
+            value={
+              typeof userCount === "number"
+                ? userCount.toLocaleString("es-AR")
+                : "..."
+            }
             label="Personas diagnosticadas"
           />
           <ImpactCard icon={Shield} value="100%" label="Gratuito siempre" />
@@ -167,7 +194,6 @@ export default function SupportPage() {
           <div className="space-y-8">
             <div className="space-y-4">
               {currency === "ARS" ? (
-                // BOTÓN MERCADO PAGO
                 <button
                   onClick={handleMPPayment}
                   className="w-full bg-brand-purple hover:bg-[#6d28d9] text-white py-4 rounded-2xl font-bold flex items-center justify-center gap-2 transition-all shadow-lg shadow-purple-500/20 active:scale-[0.98]"
@@ -176,7 +202,6 @@ export default function SupportPage() {
                   Apoyar con ${Number(selectedAmount).toLocaleString()}
                 </button>
               ) : (
-                // BOTÓN PAYPAL (Aparece solo si elige USD)
                 <div className="w-full">
                   <PayPalButton
                     amount={Number(selectedAmount)}
