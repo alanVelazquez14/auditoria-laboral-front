@@ -1,8 +1,15 @@
 "use client";
-import { useState } from "react";
-import { X, Link as LinkIcon } from "lucide-react";
+import { useEffect, useState } from "react";
+import { X, Link as LinkIcon, FileType, Eye, ChevronDown } from "lucide-react";
 import { useSession } from "next-auth/react";
 import { toast } from "sonner";
+
+interface CvVersion {
+  id: string;
+  date: string;
+  score: number;
+  cvUrl: string;
+}
 
 export default function NewApplicationModal({
   isOpen,
@@ -11,6 +18,7 @@ export default function NewApplicationModal({
 }: any) {
   const { data: session } = useSession();
   const [loading, setLoading] = useState(false);
+  const [cvVersions, setCvVersions] = useState<CvVersion[]>([]);
 
   const [formData, setFormData] = useState({
     companyName: "",
@@ -19,7 +27,28 @@ export default function NewApplicationModal({
     jobUrl: "",
     matchLevel: 1,
     message: "",
+    appliedCvId: "",
   });
+
+  useEffect(() => {
+    if (isOpen && session?.accessToken) {
+      fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/cv-history/evolution`, {
+        headers: {
+          Authorization: `Bearer ${session.accessToken}`,
+        },
+      })
+        .then((res) => res.json())
+.then((data) => {
+  const formatted = data.map((item: any) => ({
+    ...item,
+    id: item.id,
+    cvUrl: item.cvURL || item.cvUrl,
+  }));
+  setCvVersions(formatted);
+        })
+        .catch((err) => console.error("Error cargando CVs:", err));
+    }
+  }, [isOpen, session]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -34,6 +63,7 @@ export default function NewApplicationModal({
     const rawPayload: any = {
       companyName: formData.companyName.trim(),
       matchLevel: Number(formData.matchLevel),
+      appliedCvId: formData.appliedCvId || null,
     };
 
     if (formData.roleCategory) {
@@ -130,6 +160,67 @@ export default function NewApplicationModal({
               setFormData({ ...formData, companyName: e.target.value })
             }
           />
+
+          {/* Selector de CV (Opcional) */}
+          <div className="space-y-2 group">
+            <div className="flex justify-between items-center px-1">
+              <span className="text-[10px] text-gray-500 font-bold uppercase tracking-wider group-focus-within:text-purple-400 transition-colors">
+                CV Utilizado (Opcional)
+              </span>
+
+              {formData.appliedCvId && (
+                <button
+                  type="button"
+                  onClick={() => window.open(formData.appliedCvId, "_blank")}
+                  className="text-purple-400 hover:text-purple-300 text-[10px] font-bold flex items-center gap-1.5 transition-all hover:-translate-x-0.5"
+                >
+                  <Eye size={12} strokeWidth={3} />
+                  <span className="border-b border-purple-400/30 cursor-pointer">
+                    VER SELECCIONADO
+                  </span>
+                </button>
+              )}
+            </div>
+
+            <div className="relative">
+              <select
+                className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3.5 text-sm text-gray-300 outline-none 
+                 focus:ring-2 focus:ring-purple-500/40 focus:border-purple-500/50 focus:bg-white/8
+                 transition-all appearance-none cursor-pointer hover:bg-white/[0.07]"
+                value={formData.appliedCvId}
+                onChange={(e) =>
+                  setFormData({ ...formData, appliedCvId: e.target.value })
+                }
+              >
+                <option value="" className="bg-[#0f0f15] text-gray-500">
+                  Ningún CV seleccionado
+                </option>
+                {cvVersions.map((cv, idx) => (
+                  <option
+                    key={idx}
+                    value={cv.cvUrl}
+                    className="bg-[#0f0f15] text-white"
+                  >
+                    {`📄 CV - ${new Date(cv.date).toLocaleDateString()} (${cv.score} pts)`}
+                  </option>
+                ))}
+              </select>
+
+              <div className="absolute right-4 top-1/2 -translate-y-1/2 pointer-events-none flex items-center gap-3 text-gray-500 group-focus-within:text-purple-400 transition-colors">
+                <div className="w-px h-5 bg-white/10" />
+                <FileType size={16} />
+                <ChevronDown
+                  size={14}
+                  className="group-focus-within:rotate-180 transition-transform duration-300"
+                />
+              </div>
+            </div>
+
+            <p className="text-[10px] text-gray-600 italic px-1 leading-relaxed">
+              Vincular tu CV te permite analizar qué versión tiene mejor tasa de
+              conversión en tus postulaciones.
+            </p>
+          </div>
 
           {/* Categoría (Role Category) */}
           <div className="space-y-2">
@@ -239,7 +330,7 @@ export default function NewApplicationModal({
 
           <button
             disabled={loading}
-            className="w-full bg-purple-600 hover:bg-purple-700 text-white font-black py-4 rounded-xl shadow-xl shadow-purple-600/20 transition-all disabled:opacity-50 active:scale-[0.98]"
+            className="w-full bg-purple-600 hover:bg-purple-700 text-white font-black py-4 rounded-xl shadow-xl shadow-purple-600/20 transition-all disabled:opacity-50 active:scale-[0.98] cursor-pointer"
           >
             {loading ? "REGISTRANDO..." : "REGISTRAR POSTULACIÓN"}
           </button>
