@@ -9,6 +9,7 @@ import {
   List,
   ChevronLeft,
   ChevronRight,
+  FileType,
 } from "lucide-react";
 import { ApplicationCard } from "@/components/applicationPage/ApplicationCard";
 import NewApplicationModal from "@/components/applicationPage/NewApplicationModal";
@@ -26,6 +27,10 @@ interface JobApplication {
   appliedAt: string;
   mode: string;
   jobUrl?: string;
+  cvVersion?: {
+    cvUrl: string;
+    score: number;
+  };
 }
 
 const STATUS_FILTERS = [
@@ -228,6 +233,7 @@ export default function ApplicationsPage() {
                   <th className="px-6 py-4">Estado</th>
                   <th className="px-6 py-4">Match</th>
                   <th className="px-6 py-4">Fecha</th>
+                  <th className="px-6 py-4">Curriculum Vitae</th>
                   <th className="px-6 py-4 text-right">Acción</th>
                 </tr>
               </thead>
@@ -260,6 +266,26 @@ export default function ApplicationsPage() {
                     </td>
                     <td className="px-6 py-4 text-gray-500">
                       {new Date(app.appliedAt).toLocaleDateString()}
+                    </td>
+                    <td className="px-6 py-4">
+                      {app.cvVersion ? (
+                        <button
+                          onClick={() =>
+                            window.open(app.cvVersion?.cvUrl, "_blank")
+                          }
+                          className="flex items-center gap-2 px-2.5 py-1.5 rounded-lg bg-purple-500/10 text-purple-400 hover:bg-purple-500/20 transition-all cursor-pointer group/cv border border-purple-500/10"
+                          title="Abrir CV vinculado"
+                        >
+                          <FileType size={14} />
+                          <span className="text-[10px] font-bold tracking-wider">
+                            Ver CV
+                          </span>
+                        </button>
+                      ) : (
+                        <span className="text-[10px] text-gray-600 italic px-2">
+                          Sin CV
+                        </span>
+                      )}
                     </td>
                     <td className="px-6 py-4 text-right">
                       <button
