@@ -28,9 +28,9 @@ export default function Footer() {
             </div>
 
             <p className="text-gray-500 text-sm leading-relaxed max-w-sm">
-              DepurApp analiza tu CV con inteligencia artificial y te ayuda a
-              mejorar tu perfil profesional para acceder a mejores oportunidades
-              laborales.
+              Toma el control de tu búsqueda laboral. Registra tus aplicaciones
+              y mejora tu empleabilidad con análisis de CV y asesoría
+              inteligente basada en datos.
             </p>
           </div>
 
