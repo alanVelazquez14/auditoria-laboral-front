@@ -151,6 +151,29 @@ export function ApplicationCard({
         </div>
       </div>
 
+      <div className="flex flex-wrap gap-x-4 gap-y-2 text-[11px] text-gray-500 mb-6">
+        <span className="flex items-center gap-1">
+          <MapPin size={12} /> {MODE_LABELS[app.mode] || "No especificado"}
+        </span>
+
+        {/* INDICADOR DE CV VINCULADO */}
+        {app.cvVersion && (
+          <button
+            onClick={() => window.open(app.cvVersion.cvUrl, "_blank")}
+            className="flex items-center gap-1 text-purple-400 hover:text-purple-300 transition-colors cursor-pointer group/cv"
+            title="Ver CV utilizado"
+          >
+            <FileText
+              size={12}
+              className="group-hover/cv:scale-110 transition-transform"
+            />
+            <span className="font-bold cursor-pointer">
+              Ver CV
+            </span>
+          </button>
+        )}
+      </div>
+
       <div className="flex flex-wrap gap-4 text-[11px] text-gray-500 mb-6">
         <span className="flex items-center gap-1">
           <MapPin size={12} /> {MODE_LABELS[app.mode] || "No especificado"}
