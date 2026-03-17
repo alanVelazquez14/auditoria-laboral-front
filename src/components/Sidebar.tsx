@@ -10,6 +10,8 @@ import {
   LogOut,
   Zap,
   Heart,
+  ChevronDown,
+  History,
 } from "lucide-react";
 import { signOut } from "next-auth/react";
 import { useState } from "react";
@@ -20,13 +22,24 @@ const menuItems = [
   { name: "Postulaciones", icon: FileText, href: "/applications" },
   { name: "Diagnóstico", icon: Activity, href: "/diagnostic" },
   { name: "Score", icon: BarChart3, href: "/score" },
-  { name: "Perfil", icon: User, href: "/profile" },
+  {
+    name: "Perfil",
+    icon: User,
+    href: "/profile",
+    subMenu: [
+      { name: "Mis Datos", icon: User, href: "/profile" },
+      { name: "Versiones de CV", icon: History, href: "/profile/cv-history" },
+    ],
+  },
   { name: "Apoyar el proyecto", icon: Heart, href: "/support" },
 ];
 
 export const Sidebar = () => {
   const pathname = usePathname();
   const [isLogoutModalOpen, setIsLogoutModalOpen] = useState(false);
+  const [isProfileOpen, setIsProfileOpen] = useState(
+    pathname.includes("/profile"),
+  );
 
   return (
     <>
@@ -44,7 +57,53 @@ export const Sidebar = () => {
         {/* Navegación */}
         <nav className="flex-1 space-y-2">
           {menuItems.map((item) => {
-            const isActive = pathname === item.href;
+            const isActive =
+              pathname === item.href ||
+              (item.subMenu && pathname.startsWith(item.href));
+
+            if (item.subMenu) {
+              return (
+                <div key={item.name} className="space-y-1">
+                  <button
+                    onClick={() => setIsProfileOpen(!isProfileOpen)}
+                    className={`w-full flex items-center justify-between px-4 py-3 rounded-xl transition-all duration-200 group ${
+                      isActive
+                        ? "bg-purple-600/10 text-purple-400"
+                        : "text-gray-500 hover:bg-white/5 hover:text-gray-300"
+                    }`}
+                  >
+                    <div className="flex items-center gap-3">
+                      <item.icon size={20} />
+                      <span className="font-medium">{item.name}</span>
+                    </div>
+                    <ChevronDown
+                      size={16}
+                      className={`transition-transform duration-200 ${isProfileOpen ? "rotate-180" : ""}`}
+                    />
+                  </button>
+
+                  {/* Submenú con animación simple */}
+                  {isProfileOpen && (
+                    <div className="ml-9 space-y-1 overflow-hidden transition-all">
+                      {item.subMenu.map((sub) => (
+                        <Link
+                          key={sub.name}
+                          href={sub.href}
+                          className={`flex items-center gap-3 px-4 py-2 rounded-lg text-sm transition-all ${
+                            pathname === sub.href
+                              ? "text-purple-400 font-semibold"
+                              : "text-gray-500 hover:text-gray-300"
+                          }`}
+                        >
+                          <span>{sub.name}</span>
+                        </Link>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              );
+            }
+
             return (
               <Link
                 key={item.name}
