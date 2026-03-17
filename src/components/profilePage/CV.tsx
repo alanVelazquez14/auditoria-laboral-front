@@ -187,7 +187,7 @@ export default function CV({ userData }: { userData: any }) {
               : remainingCredits === 0
                 ? "Límite diario alcanzado"
                 : userData.cvUrl
-                  ? "Reemplazar y Re-analizar CV"
+                  ? "Re-analizar CV"
                   : "Subir Currículum (PDF)"}
           </button>
           {remainingCredits !== null && (
