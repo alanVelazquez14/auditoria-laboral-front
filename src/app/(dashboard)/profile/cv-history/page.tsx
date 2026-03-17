@@ -18,10 +18,12 @@ import {
   Eye,
   CheckCircle2,
 } from "lucide-react";
+import { useSession } from "next-auth/react";
 
 interface EvolutionPoint {
   date: string;
   score: number;
+  cvUrl?: string;
 }
 
 interface ConversionPoint {
@@ -31,27 +33,83 @@ interface ConversionPoint {
 }
 
 export default function CvHistoryPage() {
+  const { data: session } = useSession();
   const [evolutionData, setEvolutionData] = useState<EvolutionPoint[]>([]);
   const [conversionData, setConversionData] = useState<ConversionPoint[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     const fetchData = async () => {
+      if (!session?.accessToken) return;
+
       try {
+        const headers = {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${session.accessToken}`,
+        };
+
         const [evol, conv] = await Promise.all([
-          fetch("/api/cv-history/evolution").then((res) => res.json()),
-          fetch("/api/cv-history/conversion").then((res) => res.json()),
+          fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/cv-history/evolution`, {
+            headers,
+          }).then((res) => {
+            if (!res.ok) throw new Error("Error en evolución");
+            return res.json();
+          }),
+          fetch(
+            `${process.env.NEXT_PUBLIC_API_URL}/api/cv-history/conversion`,
+            { headers },
+          ).then((res) => {
+            if (!res.ok) throw new Error("Error en conversión");
+            return res.json();
+          }),
         ]);
-        setEvolutionData(evol);
+
+        const dataFormateada = evol.map((item: any) => ({
+          ...item,
+          cvUrl: item.cvURL || item.cvUrl,
+        }));
+
+        setEvolutionData(dataFormateada);
         setConversionData(conv);
       } catch (error) {
-        console.error("Error cargando historial", error);
+        console.error("Error en la petición:", error);
       } finally {
         setLoading(false);
       }
     };
+
     fetchData();
-  }, []);
+  }, [session]);
+
+  //Funcion ver CV
+  const handleView = (url?: string) => {
+    if (!url) return alert("No hay URL disponible para este CV");
+    window.open(url, "_blank", "noopener,noreferrer");
+  };
+  //Funcion descargar CV
+  const handleDownload = async (url?: string, date?: string) => {
+    if (!url) return alert("No hay archivo para descargar");
+
+    const fileName = `CV_DepurApp_${date?.split("T")[0]}.pdf`;
+
+    try {
+      const response = await fetch(url);
+      if (!response.ok) throw new Error();
+      const blob = await response.blob();
+      const blobUrl = window.URL.createObjectURL(blob);
+
+      const link = document.createElement("a");
+      link.href = blobUrl;
+      link.setAttribute("download", fileName);
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      window.URL.revokeObjectURL(blobUrl);
+    } catch (err) {
+      const downloadUrl = url.replace("/upload/", "/upload/fl_attachment/");
+      window.open(downloadUrl, "_blank");
+    }
+  };
 
   return (
     <div className="p-8 max-w-8xl mx-auto space-y-8 animate-in fade-in duration-500">
@@ -74,9 +132,8 @@ export default function CvHistoryPage() {
             </p>
             <p className="text-2xl font-mono font-bold text-white">
               {evolutionData.length > 0
-                ? Math.max(...evolutionData.map((d) => d.score))
-                : 0}
-              %
+                ? `${Math.max(...evolutionData.map((d) => d.score))}%`
+                : "—"}
             </p>
           </div>
         </div>
@@ -209,7 +266,7 @@ export default function CvHistoryPage() {
                   </td>
                   <td className="px-6 py-4">
                     {idx === 0 ? (
-                      <div className="flex items-center gap-2 text-purple-400 text-sm">
+                      <div className="flex items-center gap-2 text-purple-400 text-sm font-medium">
                         <CheckCircle2 size={14} />
                         <span>Principal</span>
                       </div>
@@ -218,10 +275,18 @@ export default function CvHistoryPage() {
                     )}
                   </td>
                   <td className="px-6 py-4 text-right space-x-2">
-                    <button className="p-2 text-gray-500 hover:text-white transition-colors">
+                    <button
+                      onClick={() => handleView(cv.cvUrl)}
+                      className="p-2 text-gray-500 hover:text-white transition-colors hover:bg-white/5 rounded-lg cursor-pointer"
+                      title="Ver CV"
+                    >
                       <Eye size={18} />
                     </button>
-                    <button className="p-2 text-gray-500 hover:text-purple-400 transition-colors">
+                    <button
+                      onClick={() => handleDownload(cv.cvUrl, cv.date)}
+                      className="p-2 text-gray-500 hover:text-purple-400 transition-colors hover:bg-purple-400/10 rounded-lg cursor-pointer"
+                      title="Descargar"
+                    >
                       <Download size={18} />
                     </button>
                   </td>
