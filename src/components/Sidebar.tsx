@@ -12,6 +12,7 @@ import {
   Heart,
   ChevronDown,
   History,
+  TrendingUp,
 } from "lucide-react";
 import { signOut } from "next-auth/react";
 import { useState } from "react";
@@ -21,11 +22,21 @@ const menuItems = [
   { name: "Inicio", icon: Home, href: "/home" },
   { name: "Postulaciones", icon: FileText, href: "/applications" },
   { name: "Diagnóstico", icon: Activity, href: "/diagnostic" },
-  { name: "Score", icon: BarChart3, href: "/score" },
+  {
+    name: "Score",
+    icon: BarChart3,
+    href: "/score",
+    id: "score",
+    subMenu: [
+      { name: "Score General", icon: BarChart3, href: "/score" },
+      { name: "Rendimiento", icon: TrendingUp, href: "/score/performance" },
+    ],
+  },
   {
     name: "Perfil",
     icon: User,
     href: "/profile",
+    id: "profile",
     subMenu: [
       { name: "Mis Datos", icon: User, href: "/profile" },
       { name: "Versiones de CV", icon: History, href: "/profile/cv-history" },
@@ -37,14 +48,20 @@ const menuItems = [
 export const Sidebar = () => {
   const pathname = usePathname();
   const [isLogoutModalOpen, setIsLogoutModalOpen] = useState(false);
-  const [isProfileOpen, setIsProfileOpen] = useState(
-    pathname.includes("/profile"),
-  );
+
+  // Manejo de estados independientes para submenús
+  const [openMenus, setOpenMenus] = useState<Record<string, boolean>>({
+    profile: pathname.includes("/profile"),
+    score: pathname.includes("/score"),
+  });
+
+  const toggleMenu = (id: string) => {
+    setOpenMenus((prev) => ({ ...prev, [id]: !prev[id] }));
+  };
 
   return (
     <>
       <aside className="w-64 h-screen bg-[#0a0a0f] border-r border-white/5 flex flex-col p-6 fixed left-0 top-0 backdrop-blur-md">
-        {/* Logo */}
         <div className="flex items-center gap-2 mb-10 px-2">
           <div className="bg-purple-600 p-1.5 rounded-lg">
             <Zap size={20} className="text-white fill-white" />
@@ -54,19 +71,19 @@ export const Sidebar = () => {
           </span>
         </div>
 
-        {/* Navegación */}
         <nav className="flex-1 space-y-2">
           {menuItems.map((item) => {
             const isActive =
               pathname === item.href ||
               (item.subMenu && pathname.startsWith(item.href));
+            const isMenuOpen = item.id ? openMenus[item.id] : false;
 
             if (item.subMenu) {
               return (
                 <div key={item.name} className="space-y-1">
                   <button
-                    onClick={() => setIsProfileOpen(!isProfileOpen)}
-                    className={`w-full flex items-center justify-between px-4 py-3 rounded-xl transition-all duration-200 group ${
+                    onClick={() => item.id && toggleMenu(item.id)}
+                    className={`w-full flex items-center justify-between px-4 py-3 rounded-xl transition-all duration-200 group cursor-pointer ${
                       isActive
                         ? "bg-purple-600/10 text-purple-400"
                         : "text-gray-500 hover:bg-white/5 hover:text-gray-300"
@@ -78,12 +95,11 @@ export const Sidebar = () => {
                     </div>
                     <ChevronDown
                       size={16}
-                      className={`transition-transform duration-200 ${isProfileOpen ? "rotate-180" : ""}`}
+                      className={`transition-transform duration-200 ${isMenuOpen ? "rotate-180" : ""}`}
                     />
                   </button>
 
-                  {/* Submenú con animación simple */}
-                  {isProfileOpen && (
+                  {isMenuOpen && (
                     <div className="ml-9 space-y-1 overflow-hidden transition-all">
                       {item.subMenu.map((sub) => (
                         <Link
@@ -126,7 +142,6 @@ export const Sidebar = () => {
           })}
         </nav>
 
-        {/* Botón Salir */}
         <button
           onClick={() => setIsLogoutModalOpen(true)}
           className="flex items-center gap-3 px-4 py-3 text-gray-500 hover:text-red-400 hover:bg-red-400/5 rounded-xl transition-all mt-auto cursor-pointer group"
