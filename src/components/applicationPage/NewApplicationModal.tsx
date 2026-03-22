@@ -38,13 +38,16 @@ export default function NewApplicationModal({
         },
       })
         .then((res) => res.json())
-.then((data) => {
-  const formatted = data.map((item: any) => ({
-    ...item,
-    id: item.id,
-    cvUrl: item.cvURL || item.cvUrl,
-  }));
-  setCvVersions(formatted);
+        .then((res) => {
+          const list = Array.isArray(res) ? res : res.data || [];
+
+          const formatted = list.map((item: any) => ({
+            ...item,
+            id: item.id || item.versionId,
+            cvUrl: item.cvURL || item.cvUrl,
+          }));
+
+          setCvVersions(formatted);
         })
         .catch((err) => console.error("Error cargando CVs:", err));
     }
@@ -134,6 +137,8 @@ export default function NewApplicationModal({
     }
   };
 
+  const selectedCv = cvVersions.find((cv) => cv.id === formData.appliedCvId);
+
   if (!isOpen) return null;
 
   return (
@@ -171,7 +176,11 @@ export default function NewApplicationModal({
               {formData.appliedCvId && (
                 <button
                   type="button"
-                  onClick={() => window.open(formData.appliedCvId, "_blank")}
+                  onClick={() => {
+                    if (selectedCv?.cvUrl) {
+                      window.open(selectedCv.cvUrl, "_blank");
+                    }
+                  }}
                   className="text-purple-400 hover:text-purple-300 text-[10px] font-bold flex items-center gap-1.5 transition-all hover:-translate-x-0.5"
                 >
                   <Eye size={12} strokeWidth={3} />
@@ -184,9 +193,7 @@ export default function NewApplicationModal({
 
             <div className="relative">
               <select
-                className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3.5 text-sm text-gray-300 outline-none 
-                 focus:ring-2 focus:ring-purple-500/40 focus:border-purple-500/50 focus:bg-white/8
-                 transition-all appearance-none cursor-pointer hover:bg-white/[0.07]"
+                className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3.5 text-sm text-gray-300 outline-none"
                 value={formData.appliedCvId}
                 onChange={(e) =>
                   setFormData({ ...formData, appliedCvId: e.target.value })
@@ -195,10 +202,11 @@ export default function NewApplicationModal({
                 <option value="" className="bg-[#0f0f15] text-gray-500">
                   Ningún CV seleccionado
                 </option>
-                {cvVersions.map((cv, idx) => (
+
+                {cvVersions.map((cv) => (
                   <option
-                    key={idx}
-                    value={cv.cvUrl}
+                    key={cv.id}
+                    value={cv.id}
                     className="bg-[#0f0f15] text-white"
                   >
                     {`📄 CV - ${new Date(cv.date).toLocaleDateString()} (${cv.score} pts)`}

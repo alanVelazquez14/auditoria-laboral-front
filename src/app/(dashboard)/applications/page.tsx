@@ -59,6 +59,12 @@ export default function ApplicationsPage() {
     try {
       const res = await fetch(
         `${process.env.NEXT_PUBLIC_API_URL}/api/job-applications/${session.user.id}/history`,
+        {
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${session?.accessToken}`,
+          },
+        },
       );
 
       if (res.ok) {
@@ -96,7 +102,6 @@ export default function ApplicationsPage() {
     return { currentItems: items, totalPages: pages };
   }, [filteredApps, currentPage]);
 
-  // Resetear a página 1 cuando se filtra o busca
   useEffect(() => {
     setCurrentPage(1);
   }, [filter, searchTerm]);

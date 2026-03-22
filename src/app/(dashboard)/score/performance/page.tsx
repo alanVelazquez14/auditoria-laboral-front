@@ -3,12 +3,28 @@ import { ConversionChart } from "@/components/performancePage/ConversionChart";
 import { IACoachBanner } from "@/components/performancePage/IACoachBanner";
 import { StatsCards } from "@/components/performancePage/StatsCards";
 import { useCvAnalytics } from "@/hooks/useCvAnalytics";
+import { useCvPerformance } from "@/hooks/useCvPerformance";
 
 export default function PerformancePage() {
-  const { data, loading } = useCvAnalytics();
+  const { data, loading: loadingAnalytics } = useCvAnalytics();
+  const { performanceData, loading: loadingPerformance } = useCvPerformance();
 
-  if (loading)
-    return <div className="p-10 text-white">Cargando inteligencia...</div>;
+  if (loadingAnalytics || loadingPerformance)
+    return (
+      <div className="p-10 text-white italic">Sincronizando métricas...</div>
+    );
+
+  const enrichedData = data.map((item: any) => {
+    const perf = performanceData?.find(
+      (p: any) => String(p.cvId) === String(item.cvId),
+    );
+
+    return {
+      ...item,
+      score: perf?.score || item.score,
+      cvUrl: item.cvUrl || perf?.cvUrl || null,
+    };
+  });
 
   return (
     <div className="p-8 space-y-8 max-w-8xl mx-auto">
@@ -21,18 +37,18 @@ export default function PerformancePage() {
         </p>
       </div>
 
-      <IACoachBanner data={data} />
+      <IACoachBanner data={enrichedData || []} />
 
-      <StatsCards data={data} />
+      <StatsCards data={enrichedData} />
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         <ConversionChart
-          data={data}
+          data={enrichedData}
           title="Tasa de Éxito por Versión"
           type="success"
         />
         <ConversionChart
-          data={data}
+          data={enrichedData}
           title="Fuga de Conversión (Rechazos)"
           type="rejection"
         />
