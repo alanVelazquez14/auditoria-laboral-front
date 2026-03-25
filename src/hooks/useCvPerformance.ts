@@ -29,7 +29,6 @@ export function useCvPerformance() {
 
         const evol = Array.isArray(evolRaw) ? evolRaw : evolRaw.data || [];
         const conv = Array.isArray(convRaw) ? convRaw : convRaw.data || [];
-        console.log("Primer item de Evolución:", evol[0]);
         const merged = conv.map((metric: any) => {
           const fullInfo = evol.find(
             (e: any) =>
