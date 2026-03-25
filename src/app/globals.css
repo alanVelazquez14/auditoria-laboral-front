@@ -94,3 +94,27 @@ html {
 .card-glow:hover::before {
   opacity: 1;
 }
+
+@keyframes arrowSlide {
+  0% {
+    transform: translateX(0);
+    opacity: 0.7;
+  }
+  50% {
+    transform: translateX(8px);
+    opacity: 1;
+  }
+  100% {
+    transform: translateX(0);
+    opacity: 0.7;
+  }
+}
+
+.group:hover .arrow-animate {
+  animation: arrowSlide 0.6s ease-in-out infinite;
+}
+
+/* Glow suave */
+.group:hover .arrow-glow {
+  filter: drop-shadow(0 0 6px rgba(168, 85, 247, 0.6));
+}
