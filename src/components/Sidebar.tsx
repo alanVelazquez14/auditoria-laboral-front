@@ -13,6 +13,7 @@ import {
   ChevronDown,
   History,
   TrendingUp,
+  MessageSquare,
 } from "lucide-react";
 import { signOut } from "next-auth/react";
 import { useState } from "react";
@@ -22,6 +23,16 @@ const menuItems = [
   { name: "Inicio", icon: Home, href: "/home" },
   { name: "Postulaciones", icon: FileText, href: "/applications" },
   { name: "Diagnóstico", icon: Activity, href: "/diagnostic" },
+  {
+    name: "Entrevistas",
+    icon: MessageSquare,
+    href: "/interviews",
+    id: "interviews",
+    subMenu: [
+      { name: "Simulador IA", icon: MessageSquare, href: "/interviews" },
+      // Aquí podrías añadir "Historial de Prácticas" en el futuro
+    ],
+  },
   {
     name: "Score",
     icon: BarChart3,
@@ -53,6 +64,7 @@ export const Sidebar = () => {
   const [openMenus, setOpenMenus] = useState<Record<string, boolean>>({
     profile: pathname.includes("/profile"),
     score: pathname.includes("/score"),
+    interviews: pathname.includes("/interviews"),
   });
 
   const toggleMenu = (id: string) => {
