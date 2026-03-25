@@ -11,9 +11,7 @@ import {
   BarChart,
   Bar,
 } from "recharts";
-import {
-  TrendingUp,
-} from "lucide-react";
+import { TrendingUp } from "lucide-react";
 import { useSession } from "next-auth/react";
 import CvVersions from "@/components/cvHistoryPage/CvVersions";
 
@@ -74,10 +72,9 @@ export default function CvHistoryPage() {
         setLoading(false);
       }
     };
-
     fetchData();
   }, [session]);
-  
+
   return (
     <div className="p-8 max-w-8xl mx-auto space-y-8 animate-in fade-in duration-500">
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
@@ -191,9 +188,7 @@ export default function CvHistoryPage() {
       </div>
 
       {/* Lista de Versiones */}
-      <CvVersions
-        evolutionData={evolutionData}
-      />
+      <CvVersions evolutionData={evolutionData} />
     </div>
   );
 }
