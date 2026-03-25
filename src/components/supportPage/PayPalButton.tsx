@@ -10,7 +10,7 @@ export const PayPalButton = ({ amount, onSuccess }: Props) => {
   return (
     <PayPalScriptProvider
       options={{
-        clientId: process.env.NEXT_PUBLIC_PAYPAL_CLIENT_ID || "", // Corregido: clientId en camelCase
+        clientId: process.env.NEXT_PUBLIC_PAYPAL_CLIENT_ID || "",
         currency: "USD",
         intent: "capture",
       }}
@@ -22,7 +22,7 @@ export const PayPalButton = ({ amount, onSuccess }: Props) => {
           shape: "pill",
           label: "pay",
         }}
-        forceReRender={[amount]} // Para que el botón se actualice si cambia el monto
+        forceReRender={[amount]}
         createOrder={(data, actions) => {
           return actions.order.create({
             intent: "CAPTURE",
@@ -39,8 +39,7 @@ export const PayPalButton = ({ amount, onSuccess }: Props) => {
         onApprove={async (data, actions) => {
           if (actions.order) {
             const details = await actions.order.capture();
-            console.log("Pago exitoso:", details);
-            onSuccess(); // Aquí dispararemos el confeti
+            onSuccess();
           }
         }}
       />
