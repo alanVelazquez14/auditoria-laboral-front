@@ -2,6 +2,7 @@
 import { Sidebar } from "@/components/Sidebar";
 import SplashScreen from "@/ui/SplashScreen";
 import { useEffect, useState } from "react";
+import "../globals.css";
 
 export default function DashboardLayout({
   children,
@@ -24,7 +25,7 @@ export default function DashboardLayout({
       {isLoading ? (
         <SplashScreen />
       ) : (
-        <main className="flex-1 ml-64 p-8">{children}</main>
+        <main className="flex-1 ml-64">{children}</main>
       )}
     </div>
   );
