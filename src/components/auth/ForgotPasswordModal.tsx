@@ -1,6 +1,8 @@
 import { X, Mail } from "lucide-react";
 import { useState } from "react";
 import { toast } from "sonner";
+import { apiClientRequest } from "@/lib/api-client";
+import { handleApiError } from "@/utils/error-handler";
 
 export const ForgotPasswordModal = ({ onClose }: { onClose: () => void }) => {
   const [email, setEmail] = useState("");
@@ -9,41 +11,30 @@ export const ForgotPasswordModal = ({ onClose }: { onClose: () => void }) => {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
-    if (!email) return;
+    if (!email) {
+      return;
+    }
 
     try {
       setLoading(true);
 
-      const response = await fetch(
-        `${process.env.NEXT_PUBLIC_API_URL}/api/users/forgot-password`,
-        {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({ email: email.toLowerCase().trim() }),
-        },
-      );
-
-      if (response.ok) {
-        toast.success("Enlace enviado", {
-          description:
-            "Si el correo está registrado, recibirás instrucciones en unos minutos.",
-          style: {
-            background: "#121217",
-            color: "#fff",
-            border: "1px solid #7c3aed30",
-          },
-        });
-        onClose();
-      } else {
-        const errorData = await response.json();
-        throw new Error(errorData.message || "Error al procesar la solicitud");
-      }
-    } catch (error: any) {
-      toast.error("Hubo un problema", {
-        description: error.message || "No pudimos conectar con el servidor.",
+      await apiClientRequest("/api/users/forgot-password", {
+        method: "POST",
+        body: { email: email.toLowerCase().trim() },
       });
+
+      toast.success("Enlace enviado", {
+        description:
+          "Si el correo está registrado, recibirás instrucciones en unos minutos.",
+        style: {
+          background: "#121217",
+          color: "#fff",
+          border: "1px solid #7c3aed30",
+        },
+      });
+      onClose();
+    } catch (error: any) {
+      handleApiError(error, "Hubo un problema");
     } finally {
       setLoading(false);
     }
@@ -85,9 +76,10 @@ export const ForgotPasswordModal = ({ onClose }: { onClose: () => void }) => {
 
           <button
             type="submit"
-            className="w-full p-3 rounded-lg font-bold bg-brand-purple hover:bg-[#6d28d9] text-white transition-all shadow-lg shadow-purple-500/20 cursor-pointer"
+            disabled={loading}
+            className="w-full p-3 rounded-lg font-bold bg-brand-purple hover:bg-[#6d28d9] text-white transition-all shadow-lg shadow-purple-500/20 cursor-pointer disabled:opacity-60 disabled:cursor-not-allowed"
           >
-            Enviar instrucciones
+            {loading ? "Enviando..." : "Enviar instrucciones"}
           </button>
         </form>
       </div>

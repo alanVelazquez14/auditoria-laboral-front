@@ -1,6 +1,8 @@
 import { useState } from "react";
-import { User, Mail, Lock, UserPlus } from "lucide-react";
+import { User, Mail, Lock, UserPlus, Loader2 } from "lucide-react";
 import { toast } from "sonner";
+import { apiClientRequest } from "@/lib/api-client";
+import { handleApiError } from "@/utils/error-handler";
 
 interface RegisterFormProps {
   onSuccess?: (userId: string) => void;
@@ -12,6 +14,7 @@ const RegisterForm = ({ onSuccess }: RegisterFormProps) => {
     email: "",
     password: "",
   };
+
   const [registerData, setRegisterData] = useState(initialState);
   const [errorMessage, setErrorMessage] = useState("");
   const [isLoading, setIsLoading] = useState(false);
@@ -22,34 +25,27 @@ const RegisterForm = ({ onSuccess }: RegisterFormProps) => {
     setIsLoading(true);
 
     try {
-      const response = await fetch(
-        `${process.env.NEXT_PUBLIC_API_URL}/api/users/register`,
+      const data = await apiClientRequest<{ id: string }>(
+        "/api/users/register",
         {
           method: "POST",
-          headers: {
-            "Content-Type": "application/json",
+          body: {
+            ...registerData,
+            email: registerData.email.toLowerCase().trim(),
           },
-          body: JSON.stringify(registerData),
         },
       );
 
-      const data = await response.json();
-
-      if (!response.ok) {
-        setErrorMessage(data.message || "Error al registrarse");
-        return;
-      }
-
-      toast.success("¡Cuenta creada con éxito!", {
+      toast.success("Cuenta creada con éxito", {
         description: "Ahora puedes ingresar con tus credenciales.",
       });
 
       setRegisterData(initialState);
-
-      if (onSuccess) onSuccess(data.id);
+      onSuccess?.(data.id);
     } catch (error: any) {
-      setErrorMessage(error.message || "Error inesperado");
-      toast.error("Hubo un problema con el registro");
+      const message = error?.message || "Error inesperado";
+      setErrorMessage(message);
+      handleApiError(error, "No pudimos crear la cuenta");
     } finally {
       setIsLoading(false);
     }
@@ -61,7 +57,7 @@ const RegisterForm = ({ onSuccess }: RegisterFormProps) => {
     "w-full p-3 rounded-lg font-bold transition-all transform hover:scale-105 active:scale-95 text-white flex items-center justify-center gap-2";
 
   return (
-    <form className="space-y-6">
+    <form onSubmit={handleRegister} className="space-y-6">
       <div>
         <label htmlFor="fullName" className="sr-only">
           Nombre completo
@@ -88,7 +84,7 @@ const RegisterForm = ({ onSuccess }: RegisterFormProps) => {
       </div>
       <div>
         <label htmlFor="email_register" className="sr-only">
-          Correo Electrónico
+          Correo electrónico
         </label>
         <div className="relative">
           <Mail
@@ -98,7 +94,7 @@ const RegisterForm = ({ onSuccess }: RegisterFormProps) => {
           <input
             type="email"
             id="email_register"
-            placeholder="Correo Electrónico"
+            placeholder="Correo electrónico"
             value={registerData.email}
             onChange={(e) =>
               setRegisterData({ ...registerData, email: e.target.value })
@@ -134,14 +130,18 @@ const RegisterForm = ({ onSuccess }: RegisterFormProps) => {
       </div>
       <button
         type="submit"
-        onClick={handleRegister}
-        className={`${buttonClasses} bg-purple-600 hover:bg-purple-700 shadow-lg shadow-purple-500/20 cursor-pointer group`}
+        disabled={isLoading}
+        className={`${buttonClasses} bg-purple-600 hover:bg-purple-700 shadow-lg shadow-purple-500/20 cursor-pointer group disabled:opacity-60 disabled:cursor-not-allowed`}
       >
-        <UserPlus
-          size={18}
-          className="group-hover:scale-110 group-hover:rotate-3 transition-transform duration-300"
-        />
-        Registrarse
+        {isLoading ? (
+          <Loader2 size={18} className="animate-spin" />
+        ) : (
+          <UserPlus
+            size={18}
+            className="group-hover:scale-110 group-hover:rotate-3 transition-transform duration-300"
+          />
+        )}
+        {isLoading ? "Registrando..." : "Registrarse"}
       </button>
     </form>
   );

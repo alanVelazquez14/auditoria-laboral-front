@@ -25,11 +25,12 @@ export const LoginForm = () => {
     if (result?.error) {
       handleApiError(result.error, "Error de acceso");
       setLoading(false);
-    } else {
-      toast.success("¡Bienvenido de nuevo!");
-      router.push("/home");
-      router.refresh();
+      return;
     }
+
+    toast.success("Bienvenido de nuevo");
+    router.push("/home");
+    router.refresh();
   };
 
   const inputClasses =
@@ -42,7 +43,7 @@ export const LoginForm = () => {
       <form onSubmit={handleLogin} className="space-y-6">
         <div>
           <label htmlFor="email_login" className="sr-only">
-            Correo Electrónico
+            Correo electrónico
           </label>
           <div className="relative">
             <Mail
@@ -52,7 +53,7 @@ export const LoginForm = () => {
             <input
               type="email"
               id="email_login"
-              placeholder="Correo Electrónico"
+              placeholder="Correo electrónico"
               value={loginData.email}
               onChange={(e) =>
                 setLoginData({ ...loginData, email: e.target.value })
@@ -105,7 +106,7 @@ export const LoginForm = () => {
               className="group-hover:translate-x-1 transition-transform duration-300"
             />
           )}
-          {loading ? "Iniciando..." : "Iniciar Sesión"}
+          {loading ? "Iniciando..." : "Iniciar sesión"}
         </button>
       </form>
       {isModalOpen && (

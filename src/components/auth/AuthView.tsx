@@ -1,12 +1,14 @@
 "use client";
+
 import { useState } from "react";
-import { Gitlab } from "lucide-react";
 import RegisterForm from "./RegisterForm";
 import { LoginForm } from "./LoginForm";
 import { signIn } from "next-auth/react";
 
 const AuthView = () => {
   const [activeView, setActiveView] = useState("register");
+  const isGoogleAuthEnabled =
+    process.env.NEXT_PUBLIC_GOOGLE_AUTH_ENABLED === "true";
 
   const handleSocialLogin = (provider: string) => {
     signIn(provider, { callbackUrl: "/home" });
@@ -39,9 +41,10 @@ const AuthView = () => {
       </div>
 
       <div className="max-w-7xl w-full bg-[#12121a]/30 rounded-xl shadow-2xl overflow-hidden flex flex-col md:flex-row border border-white/5">
-        {/* Lado Izquierdo: Registrarse */}
         <div
-          className={`w-full md:w-1/2 p-10 md:p-16 space-y-8 border-b md:border-b-0 md:border-r border-white/5 ${activeView === "register" ? "block" : "hidden md:block"}`}
+          className={`w-full md:w-1/2 p-10 md:p-16 space-y-8 border-b md:border-b-0 md:border-r border-white/5 ${
+            activeView === "register" ? "block" : "hidden md:block"
+          }`}
         >
           <h2 className="text-4xl font-bold text-purple-400 mb-2">
             Regístrate
@@ -53,34 +56,37 @@ const AuthView = () => {
           <RegisterForm />
 
           <div className="relative flex items-center py-4">
-            <div className="grow border-t border-gray-700"></div>
+            <div className="grow border-t border-gray-700" />
             <span className="shrink mx-4 text-gray-500 text-sm">
               O continúa con
             </span>
-            <div className="grow border-t border-gray-700"></div>
+            <div className="grow border-t border-gray-700" />
           </div>
 
-          <div className="space-y-4">
-            <button
-              onClick={() => handleSocialLogin("google")}
-              className={socialButtonClasses + " cursor-pointer"}
-            >
-              <img
-                src="https://authjs.dev/img/providers/google.svg"
-                className="w-5 h-5"
-                alt="Google"
-              />
-              Google
-            </button>
-          </div>
+          {isGoogleAuthEnabled && (
+            <div className="space-y-4">
+              <button
+                onClick={() => handleSocialLogin("google")}
+                className={`${socialButtonClasses} cursor-pointer`}
+              >
+                <img
+                  src="https://authjs.dev/img/providers/google.svg"
+                  className="w-5 h-5"
+                  alt="Google"
+                />
+                Google
+              </button>
+            </div>
+          )}
         </div>
 
-        {/* Lado Derecho: Iniciar Sesión */}
         <div
-          className={`w-full md:w-1/2 p-10 md:p-16 space-y-8 ${activeView === "login" ? "block" : "hidden md:block"}`}
+          className={`w-full md:w-1/2 p-10 md:p-16 space-y-8 ${
+            activeView === "login" ? "block" : "hidden md:block"
+          }`}
         >
           <h2 className="text-4xl font-bold text-cyan-400 mb-2">
-            Iniciar Sesión
+            Iniciar sesión
           </h2>
           <p className="text-gray-400 text-lg">
             Bienvenido de nuevo, ingresa a tu cuenta.
@@ -89,26 +95,28 @@ const AuthView = () => {
           <LoginForm />
 
           <div className="relative flex items-center py-4">
-            <div className="grow border-t border-gray-700"></div>
-            <span className="hrink mx-4 text-gray-500 text-sm">
+            <div className="grow border-t border-gray-700" />
+            <span className="shrink mx-4 text-gray-500 text-sm">
               O continúa con
             </span>
-            <div className="grow border-t border-gray-700"></div>
+            <div className="grow border-t border-gray-700" />
           </div>
 
-          <div className="space-y-4">
-            <button
-              onClick={() => handleSocialLogin("google")}
-              className={socialButtonClasses + " cursor-pointer"}
-            >
-              <img
-                src="https://authjs.dev/img/providers/google.svg"
-                className="w-5 h-5"
-                alt="Google"
-              />
-              Google
-            </button>
-          </div>
+          {isGoogleAuthEnabled && (
+            <div className="space-y-4">
+              <button
+                onClick={() => handleSocialLogin("google")}
+                className={`${socialButtonClasses} cursor-pointer`}
+              >
+                <img
+                  src="https://authjs.dev/img/providers/google.svg"
+                  className="w-5 h-5"
+                  alt="Google"
+                />
+                Google
+              </button>
+            </div>
+          )}
         </div>
       </div>
     </div>

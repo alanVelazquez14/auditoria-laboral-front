@@ -1,11 +1,12 @@
 "use client";
 
-import { useState, useEffect, Suspense } from "react"; // 1. Importar Suspense
+import { useState, useEffect, Suspense } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
 import { Lock, Eye, EyeOff, CheckCircle2 } from "lucide-react";
 import { toast } from "sonner";
+import { apiClientRequest } from "@/lib/api-client";
+import { handleApiError } from "@/utils/error-handler";
 
-// 2. Crear un componente interno para el contenido
 function ResetPasswordContent() {
   const searchParams = useSearchParams();
   const router = useRouter();
@@ -26,29 +27,25 @@ function ResetPasswordContent() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (password !== confirmPassword)
+    if (password !== confirmPassword) {
       return toast.error("Las contraseñas no coinciden");
-    if (password.length < 6) return toast.error("Mínimo 6 caracteres");
+    }
+    if (password.length < 6) {
+      return toast.error("Mínimo 6 caracteres");
+    }
 
     try {
       setLoading(true);
-      const response = await fetch(
-        `${process.env.NEXT_PUBLIC_API_URL}/api/users/reset-password`,
-        {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ token, newPassword: password }),
-        },
-      );
-
-      const data = await response.json();
-      if (!response.ok) throw new Error(data.message || "Error al restablecer");
+      await apiClientRequest("/api/users/reset-password", {
+        method: "POST",
+        body: { token, newPassword: password },
+      });
 
       setSuccess(true);
-      toast.success("¡Contraseña actualizada!");
+      toast.success("Contraseña actualizada");
       setTimeout(() => router.push("/auth"), 3000);
-    } catch (err: any) {
-      toast.error(err.message);
+    } catch (error) {
+      handleApiError(error, "No pudimos restablecer la contraseña");
     } finally {
       setLoading(false);
     }
@@ -58,7 +55,7 @@ function ResetPasswordContent() {
     return (
       <div className="flex flex-col items-center justify-center min-h-[40vh] text-center space-y-4">
         <CheckCircle2 size={64} className="text-brand-purple" />
-        <h1 className="text-2xl font-bold text-white">¡Todo listo!</h1>
+        <h1 className="text-2xl font-bold text-white">Todo listo</h1>
         <p className="text-gray-400">Redirigiéndote al inicio de sesión...</p>
       </div>
     );
@@ -133,7 +130,7 @@ export default function ResetPasswordPage() {
 function ResetPasswordLoader() {
   return (
     <div className="flex flex-col items-center space-y-4">
-      <div className="w-12 h-12 border-4 border-gray-800 border-t-brand-purple rounded-full animate-spin"></div>
+      <div className="w-12 h-12 border-4 border-gray-800 border-t-brand-purple rounded-full animate-spin" />
       <p className="text-gray-400 animate-pulse">
         Preparando restablecimiento...
       </p>

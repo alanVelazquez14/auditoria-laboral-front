@@ -10,5 +10,14 @@ export default withAuth(function middleware(req) {}, {
 });
 
 export const config = {
-  matcher: ["/home/:path*", "/profile/:path*", "/dashboard/:path*"],
+  matcher: [
+    "/home/:path*",
+    "/applications/:path*",
+    "/diagnostic/:path*",
+    "/score/:path*",
+    "/support/:path*",
+    "/interviews/:path*",
+    "/profile/:path*",
+    "/completeProfile/:path*",
+  ],
 };
