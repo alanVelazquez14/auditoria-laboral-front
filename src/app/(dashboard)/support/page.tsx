@@ -1,4 +1,5 @@
 "use client";
+
 import PageTransition from "@/components/PageTransition";
 import { ImpactCard } from "@/components/supportPage/ImpactCard";
 import { PayPalButton } from "@/components/supportPage/PayPalButton";
@@ -12,7 +13,9 @@ import {
   ChevronDown,
 } from "lucide-react";
 import { useRouter } from "next/navigation";
-import { useEffect, useState } from "react";
+import { useState } from "react";
+import { apiClientRequest } from "@/lib/api-client";
+import { handleApiError } from "@/utils/error-handler";
 
 export default function SupportPage() {
   const router = useRouter();
@@ -21,7 +24,7 @@ export default function SupportPage() {
   );
   const [isCustom, setIsCustom] = useState(false);
   const [currency, setCurrency] = useState<"ARS" | "USD">("ARS");
-  const [userCount, setUserCount] = useState<number | null>(null);
+  const [userCount] = useState<number | null>(null);
 
   const quickAmounts = [1000, 2500, 5000, 10000];
 
@@ -32,56 +35,32 @@ export default function SupportPage() {
 
   const handleCustomChange = (value: string) => {
     const numValue = value.replace(/\D/g, "");
-    setSelectedAmount(numValue ? parseInt(numValue) : null);
+    setSelectedAmount(numValue ? parseInt(numValue, 10) : null);
     setIsCustom(true);
   };
 
   const handleMPPayment = async () => {
-    if (!selectedAmount || Number(selectedAmount) <= 0) return;
-
-    try {
-      const response = await fetch(
-        `${process.env.NEXT_PUBLIC_API_URL}/api/checkout`,
-        {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ amount: Number(selectedAmount) }),
-        },
-      );
-
-      const data = await response.json();
-      if (data.url) window.location.href = data.url;
-    } catch (error) {
-      console.error("Error en Mercado Pago:", error);
+    if (!selectedAmount || Number(selectedAmount) <= 0) {
+      return;
     }
-  };
 
-  const fetchUserCount = async () => {
     try {
-      const response = await fetch(
-        `${process.env.NEXT_PUBLIC_API_URL}/api/users`,
-      );
-      if (response.ok) {
-        const data = await response.json();
-        if (Array.isArray(data)) {
-          setUserCount(data.length);
-        } else if (data.users && Array.isArray(data.users)) {
-          setUserCount(data.users.length);
-        }
+      const data = await apiClientRequest<{ url?: string }>("/api/checkout", {
+        method: "POST",
+        body: { amount: Number(selectedAmount) },
+      });
+
+      if (data.url) {
+        window.location.href = data.url;
       }
     } catch (error) {
-      console.error("Error al obtener usuarios:", error);
+      handleApiError(error, "No pudimos iniciar el pago");
     }
   };
-
-  useEffect(() => {
-    fetchUserCount();
-  }, []);
 
   return (
     <PageTransition>
       <div className="text-white flex flex-col items-center py-5">
-        {/* Header */}
         <div className="flex flex-col items-center max-w-7xl mb-12">
           <div className="w-16 h-16 bg-card-bg border border-white/5 rounded-2xl flex items-center justify-center mb-6 shadow-xl">
             <Heart
@@ -98,7 +77,6 @@ export default function SupportPage() {
           </p>
         </div>
 
-        {/* Impact Stats */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4 w-full max-w-7xl mb-16">
           <ImpactCard
             icon={Users}
@@ -117,9 +95,7 @@ export default function SupportPage() {
           />
         </div>
 
-        {/* Payment Section */}
         <div className="w-full max-w-7xl grid grid-cols-1 md:grid-cols-2 gap-12">
-          {/* Left: Amount Selector */}
           <div className="space-y-6">
             <h3 className="text-[10px] font-black text-gray-500 uppercase">
               Elige un monto
@@ -130,14 +106,11 @@ export default function SupportPage() {
                 <button
                   key={amount}
                   onClick={() => handleQuickSelect(amount)}
-                  className={`
-                p-6 rounded-2xl border transition-all flex flex-col items-center justify-center gap-1
-                ${
-                  !isCustom && selectedAmount === amount
-                    ? "bg-brand-purple/10 border-brand-purple shadow-[0_0_20px_rgba(124,58,237,0.1)]"
-                    : "bg-card-bg border-white/5 hover:border-white/10"
-                }
-                `}
+                  className={`p-6 rounded-2xl border transition-all flex flex-col items-center justify-center gap-1 ${
+                    !isCustom && selectedAmount === amount
+                      ? "bg-brand-purple/10 border-brand-purple shadow-[0_0_20px_rgba(124,58,237,0.1)]"
+                      : "bg-card-bg border-white/5 hover:border-white/10"
+                  }`}
                 >
                   <span className="text-2xl font-black">
                     ${amount.toLocaleString()}
@@ -148,12 +121,12 @@ export default function SupportPage() {
                 </button>
               ))}
 
-              {/* Input de Monto Personalizado */}
               <div
-                className={`
-                col-span-2 p-4 rounded-2xl border transition-all flex items-center gap-2
-                ${isCustom ? "bg-brand-purple/10 border-brand-purple shadow-[0_0_20px_rgba(124,58,237,0.05)]" : "bg-card-bg border-white/5"}
-                `}
+                className={`col-span-2 p-4 rounded-2xl border transition-all flex items-center gap-2 ${
+                  isCustom
+                    ? "bg-brand-purple/10 border-brand-purple shadow-[0_0_20px_rgba(124,58,237,0.05)]"
+                    : "bg-card-bg border-white/5"
+                }`}
               >
                 <span className="text-xl font-black text-gray-500 ml-2">$</span>
                 <input
@@ -164,7 +137,6 @@ export default function SupportPage() {
                   className="bg-transparent border-none focus:ring-0 text-xl font-black w-full placeholder:text-gray-700 placeholder:font-bold"
                 />
 
-                {/* Selector de Moneda */}
                 <div className="relative border-l border-white/10 pl-2">
                   <select
                     value={currency}
@@ -172,7 +144,7 @@ export default function SupportPage() {
                       setCurrency(e.target.value as "ARS" | "USD");
                       setIsCustom(true);
                     }}
-                    className="bg-transparent text-[10px] font-black text-gray-400 border-none focus:ring-0 cursor-pointer "
+                    className="bg-transparent text-[10px] font-black text-gray-400 border-none focus:ring-0 cursor-pointer"
                   >
                     <option value="ARS" className="bg-card-bg">
                       ARS
@@ -190,7 +162,6 @@ export default function SupportPage() {
             </div>
           </div>
 
-          {/* Right: Checkout & Transparency */}
           <div className="space-y-8">
             <div className="space-y-4">
               {currency === "ARS" ? (
@@ -215,7 +186,6 @@ export default function SupportPage() {
               </p>
             </div>
 
-            {/* Transparency Box */}
             <div className="bg-card-bg border border-white/5 rounded-2xl p-6 space-y-4">
               <h4 className="text-xs font-bold text-gray-400 uppercase tracking-widest">
                 Transparencia

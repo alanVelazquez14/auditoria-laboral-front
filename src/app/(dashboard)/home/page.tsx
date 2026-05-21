@@ -1,4 +1,5 @@
 "use client";
+
 import { useEffect, useState, useMemo } from "react";
 import Link from "next/link";
 import {
@@ -10,15 +11,21 @@ import {
   TrendingDown,
   AlertCircle,
 } from "lucide-react";
-
 import { Tooltip, ResponsiveContainer, PieChart, Pie, Cell } from "recharts";
-
 import StatCard from "@/components/StatCard";
-
 import EmptyState from "@/components/EmptyState";
 import PageTransition from "@/components/PageTransition";
-
+import { ActivationChecklist } from "@/components/homePage/ActivationChecklist";
+import { HomeLoadingState } from "@/components/homePage/HomeLoadingState";
+import {
+  NextBestActionCard,
+  type NextBestAction,
+} from "@/components/homePage/NextBestActionCard";
+import { apiClientRequest } from "@/lib/api-client";
+import { extractUserCvAnalysis } from "@/lib/cv-analysis";
+import { handleApiError } from "@/utils/error-handler";
 import { useSession } from "next-auth/react";
+import type { BackendJobApplication, BackendUserMe } from "@/types/backend";
 
 const ROLE_LABELS: Record<string, string> = {
   frontend: "Frontend Developer",
@@ -31,53 +38,49 @@ const ROLE_LABELS: Record<string, string> = {
 
 export default function HomePage() {
   const { data: session, status } = useSession();
-  const [user, setUser] = useState<any>(null);
-  const [applications, setApplications] = useState<any[]>([]);
+  const [user, setUser] = useState<BackendUserMe | null>(null);
+  const [applications, setApplications] = useState<BackendJobApplication[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     const fetchData = async () => {
-      if (status === "loading") return;
+      if (status === "loading") {
+        return;
+      }
 
-      const userId = session?.user?.id;
-
-      if (!userId) {
+      if (status !== "authenticated") {
         setLoading(false);
         return;
       }
 
       try {
-        const [userRes, appsRes] = await Promise.all([
-          fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/users/${userId}`),
-          fetch(
-            `${process.env.NEXT_PUBLIC_API_URL}/api/job-applications/${userId}/history`,
-          ),
+        const [userData, appsData] = await Promise.all([
+          apiClientRequest<BackendUserMe>("/api/users/me", {
+            auth: true,
+            session,
+          }),
+          apiClientRequest<BackendJobApplication[]>("/api/job-applications", {
+            auth: true,
+            session,
+          }),
         ]);
 
-        if (userRes.ok) {
-          const userData = await userRes.json();
-          setUser(userData);
-        }
-
-        if (appsRes.ok) {
-          const appsData = await appsRes.json();
-          const finalApps = Array.isArray(appsData)
-            ? appsData
-            : appsData.data || [];
-          setApplications(finalApps);
-        }
+        setUser(userData);
+        setApplications(appsData);
       } catch (error) {
-        console.error("Error al cargar datos:", error);
+        handleApiError(error, "No pudimos cargar el dashboard");
       } finally {
         setLoading(false);
       }
     };
 
-    fetchData();
-  }, []);
+    void fetchData();
+  }, [session, status]);
 
   const chartData = useMemo(() => {
-    if (applications.length === 0) return { trend: [], distribution: [] };
+    if (applications.length === 0) {
+      return { trend: [], distribution: [] };
+    }
 
     const trend = applications
       .slice()
@@ -124,7 +127,7 @@ export default function HomePage() {
     const interviews = applications.filter((app) => {
       const isCurrentlyInterview = app.status?.toUpperCase() === "INTERVIEW";
       const hadInterviewInHistory = app.statusHistory?.some(
-        (h: any) => h.newStatus?.toUpperCase() === "INTERVIEW",
+        (h) => h.newStatus?.toUpperCase() === "INTERVIEW",
       );
 
       return isCurrentlyInterview || hadInterviewInHistory;
@@ -195,15 +198,206 @@ export default function HomePage() {
     });
   }, [applications]);
 
-  if (loading) return null;
+  const hasInterviewOpportunity = useMemo(() => {
+    return applications.some((app) => {
+      const isInterviewStage = app.status === "INTERVIEW";
+      const notCompleted = app.interview?.status !== "COMPLETED";
+
+      return isInterviewStage && notCompleted;
+    });
+  }, [applications]);
+
+  const activationSteps = useMemo(() => {
+    const steps = [
+      {
+        id: "profile",
+        title: "Completa tu perfil",
+        description:
+          "Necesitamos tu stack, experiencia y objetivo para que las recomendaciones tengan contexto real.",
+        href: "/completeProfile",
+        cta: "Completar perfil",
+        completed: Boolean(user?.profileCompleted),
+      },
+      {
+        id: "cv",
+        title: "Sube tu CV base",
+        description:
+          "Activa el anÃ¡lisis ATS y empieza a detectar quÃ© estÃ¡ frenando tus respuestas.",
+        href: "/profile",
+        cta: "Subir CV",
+        completed: Boolean(user?.cvUrl),
+      },
+      {
+        id: "applications",
+        title: "Registra tus postulaciones",
+        description:
+          "Sin historial de aplicaciones no hay mÃ©tricas ni diagnÃ³stico accionable.",
+        href: "/applications",
+        cta: "Registrar postulaciones",
+        completed: applications.length > 0,
+      },
+      {
+        id: "interviews",
+        title: "Entrena tu primera entrevista",
+        description:
+          "Cuando una candidatura avance a entrevista, practica respuestas antes de hablar con reclutadores.",
+        href: "/interviews",
+        cta: "Practicar entrevista",
+        completed: applications.some(
+          (app) => app.interview?.status === "COMPLETED",
+        ),
+      },
+    ];
+
+    return steps;
+  }, [applications, user]);
+
+  const nextBestAction = useMemo<NextBestAction | null>(() => {
+    if (!user) {
+      return null;
+    }
+
+    if (!user.profileCompleted) {
+      return {
+        title: "Completa tu perfil antes de seguir aplicando",
+        description:
+          "TodavÃ­a no tenemos suficiente contexto sobre tu experiencia, stack y objetivo laboral. Sin eso, las mÃ©tricas no pueden convertirse en decisiones precisas.",
+        impact:
+          "Desbloquea diagnÃ³stico personalizado, score estratÃ©gico y recomendaciones mucho mÃ¡s confiables.",
+        href: "/completeProfile",
+        cta: "Terminar onboarding",
+        tone: "purple",
+        icon: "sparkles",
+      };
+    }
+
+    if (!user.cvUrl) {
+      return {
+        title: "Sube tu CV y activa la capa inteligente del producto",
+        description:
+          "DepurApp ya puede medir tu bÃºsqueda, pero sin CV no puede detectar quÃ© estÃ¡ afectando tu match ni cÃ³mo mejorar tu posicionamiento.",
+        impact:
+          "ObtendrÃ¡s score ATS, checks concretos y una sugerencia priorizada para mejorar tu perfil.",
+        href: "/profile",
+        cta: "Analizar mi CV",
+        tone: "cyan",
+        icon: "cv",
+      };
+    }
+
+    if (applications.length === 0) {
+      return {
+        title: "Registra tu primera postulaciÃ³n",
+        description:
+          "TodavÃ­a no hay seÃ±ales suficientes para medir conversiÃ³n, rechazo ni velocidad de avance. Tu dashboard necesita casos reales para volverse Ãºtil.",
+        impact:
+          "A partir de la primera postulaciÃ³n empiezas a construir historial, embudo y patrones por tipo de rol.",
+        href: "/applications",
+        cta: "Cargar postulaciÃ³n",
+        tone: "purple",
+        icon: "briefcase",
+      };
+    }
+
+    if (hasInterviewOpportunity) {
+      return {
+        title: "Tienes una entrevista lista para entrenar",
+        description:
+          "Una de tus postulaciones ya estÃ¡ en etapa de entrevista. Este es el momento de practicar antes de hablar con un reclutador real.",
+        impact:
+          "Mejorar tu claridad en entrevista tiene un efecto mÃ¡s inmediato que seguir enviando nuevas postulaciones hoy.",
+        href: "/interviews",
+        cta: "Entrenar ahora",
+        tone: "cyan",
+        icon: "target",
+      };
+    }
+
+    if (stats.avgMatch < 60) {
+      return {
+        title: "Tu match promedio es bajo: corrige el CV antes de escalar volumen",
+        description:
+          "EstÃ¡s aplicando, pero la afinidad media con las vacantes estÃ¡ por debajo de lo ideal. Seguir enviando sin corregir eso diluye tu esfuerzo.",
+        impact:
+          "Una mejora en match puede levantar respuestas sin necesidad de duplicar el volumen de postulaciones.",
+        href: "/profile",
+        cta: "Revisar CV y perfil",
+        tone: "amber",
+        icon: "cv",
+      };
+    }
+
+    if (stats.total >= 5 && stats.conversionRate < 10) {
+      return {
+        title: "Tu conversiÃ³n es baja: necesitas un ajuste de estrategia",
+        description:
+          "Ya hay suficiente actividad para leer una seÃ±al clara: tus postulaciones no estÃ¡n avanzando al ritmo esperado.",
+        impact:
+          "El diagnÃ³stico puede mostrarte si el cuello de botella estÃ¡ en constancia, seniority o calidad del fit.",
+        href: "/diagnostic",
+        cta: "Ver diagnÃ³stico",
+        tone: "amber",
+        icon: "sparkles",
+      };
+    }
+
+    if (stats.total < 5) {
+      return {
+        title: "Suma mÃ¡s seÃ±ales antes de sacar conclusiones",
+        description:
+          "Tu base de datos todavÃ­a es chica. Antes de optimizar demasiado pronto, conviene generar un poco mÃ¡s de volumen con consistencia.",
+        impact:
+          "Con mÃ¡s postulaciones el score, el diagnÃ³stico y los insights se vuelven mÃ¡s confiables.",
+        href: "/applications",
+        cta: "Seguir registrando",
+        tone: "purple",
+        icon: "briefcase",
+      };
+    }
+
+    const cvAnalysis = extractUserCvAnalysis(user);
+    if (cvAnalysis && cvAnalysis.score < 75) {
+      return {
+        title: "Tu CV todavÃ­a tiene margen de mejora visible",
+        description:
+          "Ya tienes movimiento real y una base de datos suficiente. El siguiente salto probablemente venga de mejorar tu documento principal.",
+        impact:
+          "Un CV mÃ¡s fuerte puede aumentar tanto tu match como la tasa de entrevista en roles similares.",
+        href: "/profile",
+        cta: "Optimizar CV",
+        tone: "cyan",
+        icon: "cv",
+      };
+    }
+
+    return {
+      title: "Ya tienes base suficiente: ahora compara quÃ© versiÃ³n convierte mejor",
+      description:
+        "Tu operaciÃ³n ya genera mÃ©tricas suficientes para pasar de seguimiento a optimizaciÃ³n fina. Es momento de mirar rendimiento por versiÃ³n de CV.",
+      impact:
+        "Entender quÃ© perfil convierte mejor te ayuda a elegir dÃ³nde insistir y quÃ© narrativa escalar.",
+      href: "/score/performance",
+      cta: "Ver rendimiento",
+      tone: "purple",
+      icon: "target",
+    };
+  }, [applications, hasInterviewOpportunity, stats, user]);
+
+  if (loading) {
+    return (
+      <PageTransition>
+        <HomeLoadingState />
+      </PageTransition>
+    );
+  }
 
   const getFeedbackBanner = () => {
     const { total, avgMatch, conversionRate } = stats;
 
-    // Caso: Sin suficientes datos
-    if (total < 3) return null;
+    if (total < 3) {
+      return null;
+    }
 
-    // Caso: MAL (Imagen que pasaste)
     if (conversionRate < 10 && total >= 5) {
       return {
         title: "Alta actividad, bajo impacto.",
@@ -214,7 +408,6 @@ export default function HomePage() {
       };
     }
 
-    // Caso: REGULAR
     if (avgMatch < 60) {
       return {
         title: "Mejora tu afinidad.",
@@ -225,10 +418,9 @@ export default function HomePage() {
       };
     }
 
-    // Caso: BIEN
     if (conversionRate >= 20) {
       return {
-        title: "¡Excelente estrategia!",
+        title: "Excelente estrategia",
         message:
           "Tu tasa de conversión es alta. Estás apuntando a los roles correctos y tu perfil resulta atractivo para los reclutadores.",
         type: "success",
@@ -254,7 +446,10 @@ export default function HomePage() {
               </h1>
             </header>
 
-            {/* Banner de Alerta */}
+            {nextBestAction && <NextBestActionCard action={nextBestAction} />}
+
+            <ActivationChecklist steps={activationSteps} />
+
             {banner && (
               <div
                 className={`p-4 rounded-xl border flex gap-4 items-start transition-all ${
@@ -277,7 +472,6 @@ export default function HomePage() {
               </div>
             )}
 
-            {/* Grid de Stats */}
             <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
               <StatCard
                 label="Postulaciones"
@@ -308,22 +502,18 @@ export default function HomePage() {
                 color="text-yellow-500"
                 icon={AlertCircle}
                 subtext={
-                  stats.avgMatch < 60
-                    ? "Por debajo del ideal"
-                    : "Buen fit general"
+                  stats.avgMatch < 60 ? "Por debajo del ideal" : "Buen fit general"
                 }
                 subtextColor="text-yellow-600/70"
               />
             </div>
 
-            {/* --- SECCIÓN DE GRÁFICOS (Solo si hay aplicaciones) --- */}
             {applications.length > 0 && (
               <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-stretch">
-                {/* Gráfico de Distribución (4 columnas) */}
                 <div className="lg:col-span-4 bg-card-bg border border-white/5 rounded-2xl p-6 flex flex-col h-full">
                   <h3 className="text-white font-semibold mb-2 flex items-center gap-2 text-sm">
                     <PieIcon size={16} className="text-cyan-400" /> Distribución
-                    de Estados
+                    de estados
                   </h3>
                   <div className="h-64 w-full">
                     <ResponsiveContainer width="100%" height="100%">
@@ -352,7 +542,6 @@ export default function HomePage() {
                     </ResponsiveContainer>
                   </div>
 
-                  {/* Leyenda mejorada para ocupar el espacio vertical */}
                   <div className="space-y-3 mt-4">
                     {chartData.distribution.map((item) => (
                       <div
@@ -376,12 +565,11 @@ export default function HomePage() {
                   </div>
                 </div>
 
-                {/* Actividad Reciente (8 columnas) */}
                 <div className="lg:col-span-8 bg-card-bg border border-white/5 rounded-2xl p-6 flex flex-col h-full">
                   <div className="flex justify-between items-center mb-6">
                     <h2 className="text-white font-semibold flex items-center gap-2 text-sm">
-                      <Activity size={16} className="text-purple-500" />{" "}
-                      Actividad reciente
+                      <Activity size={16} className="text-purple-500" /> Actividad
+                      reciente
                     </h2>
                     <Link
                       href="/applications"
@@ -412,7 +600,6 @@ export default function HomePage() {
                             >
                               {item.status}
                             </span>
-                            {/* Podrías agregar la fecha aquí si la tienes en el objeto */}
                           </div>
                         </div>
                       ))
