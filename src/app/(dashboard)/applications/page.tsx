@@ -1,7 +1,7 @@
 "use client";
 
 import { useSession } from "next-auth/react";
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import {
   Plus,
   Search,
@@ -17,21 +17,9 @@ import { ViewDetailsModal } from "@/components/applicationPage/ViewDetailsModal"
 import { StatusDropdown } from "@/components/applicationPage/StatusDropdown";
 import { toast } from "sonner";
 import PageTransition from "@/components/PageTransition";
-
-interface JobApplication {
-  id: string;
-  companyName: string;
-  position: string;
-  status: string;
-  matchLevel: number;
-  appliedAt: string;
-  mode: string;
-  jobUrl?: string;
-  cvVersion?: {
-    cvUrl: string;
-    score: number;
-  };
-}
+import { apiClientRequest } from "@/lib/api-client";
+import { handleApiError } from "@/utils/error-handler";
+import type { BackendJobApplication, JobApplicationStatus } from "@/types/backend";
 
 const STATUS_FILTERS = [
   { label: "Todas", value: "all" },
@@ -44,43 +32,44 @@ const STATUS_FILTERS = [
 
 export default function ApplicationsPage() {
   const { data: session, status } = useSession();
-  const [apps, setApps] = useState<JobApplication[]>([]);
+  const [apps, setApps] = useState<BackendJobApplication[]>([]);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [filter, setFilter] = useState("all");
   const [searchTerm, setSearchTerm] = useState("");
   const [viewMode, setViewMode] = useState<"grid" | "list">("grid");
-  const [selectedApp, setSelectedApp] = useState<JobApplication | null>(null);
-
+  const [selectedApp, setSelectedApp] = useState<BackendJobApplication | null>(null);
   const [currentPage, setCurrentPage] = useState(1);
   const itemsPerPage = 9;
 
-  const fetchApps = async () => {
-    if (!session?.user?.id) return;
+  const fetchApps = useCallback(async () => {
+    if (status !== "authenticated") {
+      return;
+    }
+
     try {
-      const res = await fetch(
-        `${process.env.NEXT_PUBLIC_API_URL}/api/job-applications/${session.user.id}/history`,
+      const data = await apiClientRequest<BackendJobApplication[]>(
+        "/api/job-applications",
         {
-          headers: {
-            "Content-Type": "application/json",
-            Authorization: `Bearer ${session?.accessToken}`,
-          },
+          auth: true,
+          session,
         },
       );
 
-      if (res.ok) {
-        const data = await res.json();
-        setApps(data);
-      }
+      setApps(data);
     } catch (error) {
-      console.error("Error al cargar aplicaciones:", error);
+      handleApiError(error, "No pudimos cargar las postulaciones");
     }
-  };
+  }, [session, status]);
 
   useEffect(() => {
     if (status === "authenticated") {
-      fetchApps();
+      const timeoutId = window.setTimeout(() => {
+        void fetchApps();
+      }, 0);
+
+      return () => window.clearTimeout(timeoutId);
     }
-  }, [status, session]);
+  }, [fetchApps, status]);
 
   const filteredApps = useMemo(() => {
     return apps
@@ -92,7 +81,6 @@ export default function ApplicationsPage() {
       );
   }, [apps, filter, searchTerm]);
 
-  // Lógica de Paginación
   const { currentItems, totalPages } = useMemo(() => {
     const total = filteredApps.length;
     const pages = Math.ceil(total / itemsPerPage);
@@ -102,11 +90,10 @@ export default function ApplicationsPage() {
     return { currentItems: items, totalPages: pages };
   }, [filteredApps, currentPage]);
 
-  useEffect(() => {
-    setCurrentPage(1);
-  }, [filter, searchTerm]);
-
-  const handleStatusChangeInList = async (appId: string, newStatus: string) => {
+  const handleStatusChangeInList = async (
+    appId: string,
+    newStatus: JobApplicationStatus,
+  ) => {
     const currentApp = apps.find((a) => a.id === appId);
 
     if (currentApp?.status === "REJECTED" && newStatus !== "REJECTED") {
@@ -118,21 +105,17 @@ export default function ApplicationsPage() {
     }
 
     try {
-      const response = await fetch(
-        `${process.env.NEXT_PUBLIC_API_URL}/api/job-applications/${appId}/status`,
-        {
-          method: "PATCH",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ status: newStatus }),
-        },
-      );
+      await apiClientRequest(`/api/job-applications/${appId}/status`, {
+        method: "PATCH",
+        auth: true,
+        session,
+        body: { status: newStatus },
+      });
 
-      if (response.ok) {
-        fetchApps();
-        toast.success("Estado actualizado");
-      }
+      await fetchApps();
+      toast.success("Estado actualizado");
     } catch (error) {
-      console.error("Error:", error);
+      handleApiError(error, "No pudimos actualizar el estado");
     }
   };
 
@@ -147,7 +130,6 @@ export default function ApplicationsPage() {
   return (
     <PageTransition>
       <div className="max-w-7xl mx-10 space-y-8 pb-10">
-        {/* Header */}
         <header className="flex justify-between items-end">
           <div>
             <h1 className="text-3xl font-bold text-white mb-2">
@@ -159,13 +141,21 @@ export default function ApplicationsPage() {
             <div className="flex bg-[#111118] border border-white/5 rounded-xl p-1">
               <button
                 onClick={() => setViewMode("grid")}
-                className={`p-2 rounded-lg transition-all cursor-pointer ${viewMode === "grid" ? "bg-white/10 text-purple-400" : "text-gray-500"}`}
+                className={`p-2 rounded-lg transition-all cursor-pointer ${
+                  viewMode === "grid"
+                    ? "bg-white/10 text-purple-400"
+                    : "text-gray-500"
+                }`}
               >
                 <LayoutGrid size={18} />
               </button>
               <button
                 onClick={() => setViewMode("list")}
-                className={`p-2 rounded-lg transition-all cursor-pointer ${viewMode === "list" ? "bg-white/10 text-purple-400" : "text-gray-500"}`}
+                className={`p-2 rounded-lg transition-all cursor-pointer ${
+                  viewMode === "list"
+                    ? "bg-white/10 text-purple-400"
+                    : "text-gray-500"
+                }`}
               >
                 <List size={18} />
               </button>
@@ -179,14 +169,12 @@ export default function ApplicationsPage() {
           </div>
         </header>
 
-        {/* Banner */}
         <div className="bg-[#111118] border border-white/5 px-5 py-4 rounded-2xl italic text-gray-500 text-sm">
           <p className="text-[15px]">
             Si no registras tus postulaciones, el sistema no puede ayudarte.
           </p>
         </div>
 
-        {/* Buscador y Filtros */}
         <div className="flex flex-col md:flex-row gap-4 items-center justify-between">
           <div className="relative w-full md:w-96">
             <Search
@@ -197,7 +185,10 @@ export default function ApplicationsPage() {
               type="text"
               placeholder="Buscar empresa o puesto..."
               className="w-full bg-[#111118] border border-white/5 rounded-xl py-2 pl-10 pr-4 text-sm text-white focus:outline-none focus:border-purple-500/50 transition-all"
-              onChange={(e) => setSearchTerm(e.target.value)}
+              onChange={(e) => {
+                setSearchTerm(e.target.value);
+                setCurrentPage(1);
+              }}
             />
           </div>
 
@@ -205,7 +196,10 @@ export default function ApplicationsPage() {
             {STATUS_FILTERS.map((f) => (
               <button
                 key={f.value}
-                onClick={() => setFilter(f.value)}
+                onClick={() => {
+                  setFilter(f.value);
+                  setCurrentPage(1);
+                }}
                 className={`px-4 py-2 rounded-xl text-xs font-bold transition-all whitespace-nowrap ${
                   filter === f.value
                     ? "bg-purple-600 text-white"
@@ -218,16 +212,21 @@ export default function ApplicationsPage() {
           </div>
         </div>
 
-        {/* Contenido Dinámico */}
         {viewMode === "grid" ? (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {currentItems.map((app) => (
-              <ApplicationCard
-                key={app.id}
-                app={app}
-                onStatusUpdate={handleStatusChangeInList}
-              />
-            ))}
+            {currentItems.length > 0 ? (
+              currentItems.map((app) => (
+                <ApplicationCard
+                  key={app.id}
+                  app={app}
+                  onStatusUpdate={handleStatusChangeInList}
+                />
+              ))
+            ) : (
+              <div className="md:col-span-2 lg:col-span-3 rounded-2xl border border-dashed border-white/10 p-10 text-center text-sm text-gray-500">
+                No hay postulaciones para este filtro.
+              </div>
+            )}
           </div>
         ) : (
           <div className="bg-[#111118] border border-white/5 rounded-2xl overflow-hidden">
@@ -238,7 +237,7 @@ export default function ApplicationsPage() {
                   <th className="px-6 py-4">Estado</th>
                   <th className="px-6 py-4">Match</th>
                   <th className="px-6 py-4">Fecha</th>
-                  <th className="px-6 py-4">Curriculum Vitae</th>
+                  <th className="px-6 py-4">Currículum Vitae</th>
                   <th className="px-6 py-4 text-right">Acción</th>
                 </tr>
               </thead>
@@ -275,9 +274,11 @@ export default function ApplicationsPage() {
                     <td className="px-6 py-4">
                       {app.cvVersion ? (
                         <button
-                          onClick={() =>
-                            window.open(app.cvVersion?.cvUrl, "_blank")
-                          }
+                          onClick={() => {
+                            if (app.cvVersion?.cvUrl) {
+                              window.open(app.cvVersion.cvUrl, "_blank");
+                            }
+                          }}
                           className="flex items-center gap-2 px-2.5 py-1.5 rounded-lg bg-purple-500/10 text-purple-400 hover:bg-purple-500/20 transition-all cursor-pointer group/cv border border-purple-500/10"
                           title="Abrir CV vinculado"
                         >
@@ -307,10 +308,8 @@ export default function ApplicationsPage() {
           </div>
         )}
 
-        {/* Paginación UI */}
         {totalPages > 1 && (
           <div className="flex justify-center items-center gap-3 pt-8">
-            {/* Botón Anterior */}
             <button
               onClick={() => setCurrentPage((prev) => Math.max(prev - 1, 1))}
               disabled={currentPage === 1}
@@ -319,7 +318,6 @@ export default function ApplicationsPage() {
               <ChevronLeft size={18} />
             </button>
 
-            {/* Números de Página */}
             <div className="flex gap-2">
               {pageNumbers.map((number) => (
                 <button
@@ -336,7 +334,6 @@ export default function ApplicationsPage() {
               ))}
             </div>
 
-            {/* Botón Siguiente */}
             <button
               onClick={() =>
                 setCurrentPage((prev) => Math.min(prev + 1, totalPages))
@@ -348,7 +345,6 @@ export default function ApplicationsPage() {
             </button>
           </div>
         )}
-        {/* Modales */}
         {selectedApp && (
           <ViewDetailsModal
             app={selectedApp}

@@ -1,11 +1,7 @@
 "use client";
 import { Building2, MapPin, Link2, FileText, Calendar } from "lucide-react";
-import { useEffect, useState } from "react";
-
-interface ApplicationCardProps {
-  app: any;
-  onStatusUpdate: (id: string, newStatus: string) => void;
-}
+import { useState } from "react";
+import type { BackendJobApplication, JobApplicationStatus } from "@/types/backend";
 
 export const ROLE_LABELS: Record<string, string> = {
   frontend: "Frontend Developer",
@@ -26,11 +22,10 @@ export function ApplicationCard({
   app,
   onStatusUpdate,
 }: {
-  app: any;
-  onStatusUpdate?: (id: string, newStatus: string) => void;
+  app: BackendJobApplication;
+  onStatusUpdate?: (id: string, newStatus: JobApplicationStatus) => void;
 }) {
   const [showMenu, setShowMenu] = useState(false);
-  const [localStatus, setLocalStatus] = useState(app.status);
 
   const STATUS_OPTIONS = [
     {
@@ -85,18 +80,14 @@ export function ApplicationCard({
     return { color: "text-red-500", bg: "bg-red-500", percent };
   };
 
-  const handleStatusChange = (newStatus: string) => {
+  const handleStatusChange = (newStatus: JobApplicationStatus) => {
     setShowMenu(false);
     if (onStatusUpdate) {
       onStatusUpdate(app.id, newStatus);
     }
   };
 
-  useEffect(() => {
-    setLocalStatus(app.status);
-  }, [app.status]);
-
-  const statusInfo = getStatusDisplay(localStatus);
+  const statusInfo = getStatusDisplay(app.status);
   const matchInfo = getMatchStyles(app.matchLevel || 1);
 
   return (
@@ -135,7 +126,9 @@ export function ApplicationCard({
                 {STATUS_OPTIONS.map((opt) => (
                   <button
                     key={opt.value}
-                    onClick={() => handleStatusChange(opt.value)}
+                    onClick={() =>
+                      handleStatusChange(opt.value as JobApplicationStatus)
+                    }
                     className={`
                       w-full text-left px-3 py-2 text-[13px] cursor-pointer
                       hover:bg-white/5 transition-colors
@@ -153,13 +146,18 @@ export function ApplicationCard({
 
       <div className="flex flex-wrap gap-x-4 gap-y-2 text-[11px] text-gray-500 mb-6">
         <span className="flex items-center gap-1">
-          <MapPin size={12} /> {MODE_LABELS[app.mode] || "No especificado"}
+          <MapPin size={12} />{" "}
+          {(app.mode ? MODE_LABELS[app.mode] : null) || "No especificado"}
         </span>
 
         {/* INDICADOR DE CV VINCULADO */}
         {app.cvVersion && (
           <button
-            onClick={() => window.open(app.cvVersion.cvUrl, "_blank")}
+            onClick={() => {
+              if (app.cvVersion?.cvUrl) {
+                window.open(app.cvVersion.cvUrl, "_blank");
+              }
+            }}
             className="flex items-center gap-1 text-purple-400 hover:text-purple-300 transition-colors cursor-pointer group/cv"
             title="Ver CV utilizado"
           >
@@ -176,7 +174,8 @@ export function ApplicationCard({
 
       <div className="flex flex-wrap gap-4 text-[11px] text-gray-500 mb-6">
         <span className="flex items-center gap-1">
-          <MapPin size={12} /> {MODE_LABELS[app.mode] || "No especificado"}
+          <MapPin size={12} />{" "}
+          {(app.mode ? MODE_LABELS[app.mode] : null) || "No especificado"}
         </span>
         {app.jobUrl && (
           <a

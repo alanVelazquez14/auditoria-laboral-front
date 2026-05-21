@@ -1,4 +1,5 @@
 "use client";
+
 import { useEffect, useState } from "react";
 import {
   LineChart,
@@ -14,73 +15,87 @@ import {
 import { TrendingUp } from "lucide-react";
 import { useSession } from "next-auth/react";
 import CvVersions from "@/components/cvHistoryPage/CvVersions";
+import { apiClientRequest } from "@/lib/api-client";
+import { handleApiError } from "@/utils/error-handler";
+import type {
+  BackendCvHistoryConversionItem,
+  BackendCvHistoryEvolutionItem,
+} from "@/types/backend";
 
 export interface EvolutionPoint {
+  id: string;
   date: string;
   score: number;
   cvUrl?: string;
 }
 
 export interface ConversionPoint {
+  cvDate: string;
   score: number;
   efficiency: number;
   totalApplied: number;
 }
 
 export default function CvHistoryPage() {
-  const { data: session } = useSession();
+  const { data: session, status } = useSession();
   const [evolutionData, setEvolutionData] = useState<EvolutionPoint[]>([]);
   const [conversionData, setConversionData] = useState<ConversionPoint[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     const fetchData = async () => {
-      if (!session?.accessToken) return;
+      if (status !== "authenticated") {
+        setLoading(status === "loading");
+        return;
+      }
 
       try {
-        const headers = {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${session.accessToken}`,
-        };
-
         const [evol, conv] = await Promise.all([
-          fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/cv-history/evolution`, {
-            headers,
-          }).then((res) => {
-            if (!res.ok) throw new Error("Error en evolución");
-            return res.json();
-          }),
-          fetch(
-            `${process.env.NEXT_PUBLIC_API_URL}/api/cv-history/conversion`,
-            { headers },
-          ).then((res) => {
-            if (!res.ok) throw new Error("Error en conversión");
-            return res.json();
-          }),
+          apiClientRequest<BackendCvHistoryEvolutionItem[]>(
+            "/api/cv-history/evolution",
+            {
+              auth: true,
+              session,
+            },
+          ),
+          apiClientRequest<BackendCvHistoryConversionItem[]>(
+            "/api/cv-history/conversion",
+            {
+              auth: true,
+              session,
+            },
+          ),
         ]);
 
-        const dataFormateada = evol.map((item: any) => ({
-          ...item,
-          cvUrl: item.cvURL || item.cvUrl,
+        const dataFormateada = evol.map((item) => ({
+          id: item.versionId,
+          date: item.date,
+          score: item.score,
+          cvUrl: item.cvUrl ?? undefined,
         }));
 
         setEvolutionData(dataFormateada);
         setConversionData(conv);
       } catch (error) {
-        console.error("Error en la petición:", error);
+        handleApiError(error, "No pudimos cargar el historial de CV");
       } finally {
         setLoading(false);
       }
     };
-    fetchData();
-  }, [session]);
+
+    void fetchData();
+  }, [session, status]);
+
+  if (loading) {
+    return <div className="p-8 text-white">Cargando historial...</div>;
+  }
 
   return (
     <div className="p-8 max-w-8xl mx-auto space-y-8 animate-in fade-in duration-500">
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
           <h1 className="text-3xl font-bold text-white tracking-tight">
-            Análisis de Evolución
+            Análisis de evolución
           </h1>
           <p className="text-gray-400 mt-1">
             Monitorea cómo cada mejora en tu CV impacta en tus resultados.
@@ -92,7 +107,7 @@ export default function CvHistoryPage() {
           </div>
           <div>
             <p className="text-xs text-purple-300 uppercase font-bold tracking-wider">
-              Puntaje Máximo
+              Puntaje máximo
             </p>
             <p className="text-2xl font-mono font-bold text-white">
               {evolutionData.length > 0
@@ -104,10 +119,9 @@ export default function CvHistoryPage() {
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-        {/* Gráfico de Evolución de Score */}
         <div className="lg:col-span-2 bg-[#0a0a0f] border border-white/5 rounded-3xl p-6">
           <h3 className="text-lg font-semibold text-white mb-6">
-            Progreso del Score ATS
+            Progreso del score ATS
           </h3>
           <div className="h-75 w-full">
             <ResponsiveContainer width="100%" height="100%">
@@ -150,10 +164,9 @@ export default function CvHistoryPage() {
           </div>
         </div>
 
-        {/* Gráfico de Conversión */}
         <div className="bg-[#0a0a0f] border border-white/5 rounded-3xl p-6">
           <h3 className="text-lg font-semibold text-white mb-6">
-            Eficiencia por Versión
+            Eficiencia por versión
           </h3>
           <div className="h-75 w-full">
             <ResponsiveContainer width="100%" height="100%">
@@ -187,7 +200,6 @@ export default function CvHistoryPage() {
         </div>
       </div>
 
-      {/* Lista de Versiones */}
       <CvVersions evolutionData={evolutionData} />
     </div>
   );

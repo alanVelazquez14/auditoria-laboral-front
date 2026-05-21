@@ -69,7 +69,7 @@ export default function CvVersions({
           <tbody className="divide-y divide-white/5">
             {evolutionData.map((cv, idx) => (
               <tr
-                key={idx}
+                key={cv.id}
                 className="group hover:bg-white/2 transition-colors"
               >
                 <td className="px-6 py-4 text-gray-300 text-sm">

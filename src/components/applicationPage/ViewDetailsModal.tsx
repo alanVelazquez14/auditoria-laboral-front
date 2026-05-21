@@ -3,12 +3,13 @@ import {
   Link2,
   MapPin,
 } from "lucide-react";
+import type { BackendJobApplication } from "@/types/backend";
 
 export function ViewDetailsModal({
   app,
   onClose,
 }: {
-  app: any;
+  app: BackendJobApplication;
   onClose: () => void;
 }) {
   if (!app) return null;
@@ -78,12 +79,14 @@ export function ViewDetailsModal({
           <div className="space-y-2">
             <div className="flex justify-between text-[10px] uppercase text-gray-500 font-bold">
               <span>Match de Requisitos</span>
-              <span className="text-cyan-400">{app.matchLevel * 10}%</span>
+              <span className="text-cyan-400">
+                {(app.matchLevel ?? 0) * 10}%
+              </span>
             </div>
             <div className="w-full h-2 bg-white/5 rounded-full overflow-hidden">
               <div
                 className="h-full bg-cyan-500 transition-all duration-1000"
-                style={{ width: `${app.matchLevel * 10}%` }}
+                style={{ width: `${(app.matchLevel ?? 0) * 10}%` }}
               />
             </div>
           </div>

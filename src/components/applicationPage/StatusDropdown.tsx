@@ -1,5 +1,6 @@
 "use client";
 import { useState } from "react";
+import type { JobApplicationStatus } from "@/types/backend";
 
 const STATUS_MAP: Record<string, { label: string; color: string }> = {
   APPLIED: { label: "Aplicada", color: "bg-purple-500/10 text-purple-400" },
@@ -14,7 +15,7 @@ export function StatusDropdown({
   onChange,
 }: {
   currentStatus: string;
-  onChange: (val: string) => void;
+  onChange: (val: JobApplicationStatus) => void;
 }) {
   const [isOpen, setIsOpen] = useState(false);
   const statusInfo = STATUS_MAP[currentStatus] || {
@@ -50,7 +51,7 @@ export function StatusDropdown({
                   key={value}
                   onClick={(e) => {
                     e.stopPropagation();
-                    onChange(value);
+                    onChange(value as JobApplicationStatus);
                     setIsOpen(false);
                   }}
                   className={`w-full text-left px-4 py-2.5 text-[11px] font-bold hover:bg-white/5 transition-colors cursor-pointer ${color.split(" ").find((c) => c.startsWith("text-"))}`}

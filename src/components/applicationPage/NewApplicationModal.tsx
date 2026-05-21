@@ -1,8 +1,12 @@
 "use client";
+
 import { useEffect, useState } from "react";
 import { X, Link as LinkIcon, FileType, Eye, ChevronDown } from "lucide-react";
 import { useSession } from "next-auth/react";
 import { toast } from "sonner";
+import { apiClientRequest } from "@/lib/api-client";
+import { handleApiError } from "@/utils/error-handler";
+import type { BackendCvHistoryEvolutionItem } from "@/types/backend";
 
 interface CvVersion {
   id: string;
@@ -11,11 +15,17 @@ interface CvVersion {
   cvUrl: string;
 }
 
+type NewApplicationModalProps = {
+  isOpen: boolean;
+  onClose: () => void;
+  onSuccess: () => void | Promise<void>;
+};
+
 export default function NewApplicationModal({
   isOpen,
   onClose,
   onSuccess,
-}: any) {
+}: NewApplicationModalProps) {
   const { data: session } = useSession();
   const [loading, setLoading] = useState(false);
   const [cvVersions, setCvVersions] = useState<CvVersion[]>([]);
@@ -31,47 +41,57 @@ export default function NewApplicationModal({
   });
 
   useEffect(() => {
-    if (isOpen && session?.accessToken) {
-      fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/cv-history/evolution`, {
-        headers: {
-          Authorization: `Bearer ${session.accessToken}`,
-        },
-      })
-        .then((res) => res.json())
-        .then((res) => {
-          const list = Array.isArray(res) ? res : res.data || [];
+    const loadCvVersions = async () => {
+      if (!isOpen || !session) {
+        return;
+      }
 
-          const formatted = list.map((item: any) => ({
-            ...item,
-            id: item.id || item.versionId,
-            cvUrl: item.cvURL || item.cvUrl,
-          }));
+      try {
+        const list = await apiClientRequest<BackendCvHistoryEvolutionItem[]>(
+          "/api/cv-history/evolution",
+          {
+            auth: true,
+            session,
+          },
+        );
 
-          setCvVersions(formatted);
-        })
-        .catch((err) => console.error("Error cargando CVs:", err));
-    }
+        setCvVersions(
+          list.map((item) => ({
+            id: item.versionId,
+            date: item.date,
+            score: item.score,
+            cvUrl: item.cvUrl ?? "",
+          })),
+        );
+      } catch (error) {
+        handleApiError(error, "No pudimos cargar tus CV");
+      }
+    };
+
+    void loadCvVersions();
   }, [isOpen, session]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
-    if (!session?.user?.id || !session?.accessToken) {
-      toast.error("Debes estar autenticado para realizar esta acción");
+    if (!session) {
+      toast.error("Debes estar autenticado para realizar esta acciÃ³n");
+      return;
+    }
+
+    if (!formData.roleCategory) {
+      toast.error("Debes seleccionar una categorÃ­a");
       return;
     }
 
     setLoading(true);
 
-    const rawPayload: any = {
+    const rawPayload: Record<string, string | number | null> = {
       companyName: formData.companyName.trim(),
+      roleCategory: formData.roleCategory,
       matchLevel: Number(formData.matchLevel),
       appliedCvId: formData.appliedCvId || null,
     };
-
-    if (formData.roleCategory) {
-      rawPayload.roleCategory = formData.roleCategory;
-    }
 
     if (formData.mode) {
       rawPayload.mode =
@@ -93,7 +113,7 @@ export default function NewApplicationModal({
         new URL(url);
         rawPayload.jobUrl = url;
       } catch {
-        alert("La URL no es válida");
+        toast.error("La URL no es vÃ¡lida");
         setLoading(false);
         return;
       }
@@ -104,34 +124,17 @@ export default function NewApplicationModal({
     }
 
     try {
-      const response = await fetch(
-        `${process.env.NEXT_PUBLIC_API_URL}/api/job-applications/${session.user.id}`,
-        {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            Authorization: `Bearer ${session.accessToken}`,
-          },
-          body: JSON.stringify(rawPayload),
-        },
-      );
+      await apiClientRequest("/api/job-applications", {
+        method: "POST",
+        auth: true,
+        session,
+        body: rawPayload,
+      });
 
-      const result = await response.json();
-
-      if (!response.ok) {
-        alert(
-          "Error: " +
-            (Array.isArray(result.message)
-              ? result.message.join(", ")
-              : result.message),
-        );
-        return;
-      }
-
-      onSuccess();
+      await onSuccess();
       onClose();
-    } catch (error: any) {
-      alert("Error de conexión: " + error.message);
+    } catch (error) {
+      handleApiError(error, "No pudimos registrar la postulaciÃ³n");
     } finally {
       setLoading(false);
     }
@@ -145,7 +148,7 @@ export default function NewApplicationModal({
     <div className="fixed inset-0 bg-black/70 backdrop-blur-md z-50 flex items-center justify-center p-4">
       <div className="bg-[#0f0f15] border border-white/10 w-full max-w-md rounded-2xl p-7 shadow-2xl">
         <div className="flex justify-between items-center mb-6">
-          <h2 className="text-xl font-bold text-white">Nueva postulación</h2>
+          <h2 className="text-xl font-bold text-white">Nueva postulaciÃ³n</h2>
           <button
             onClick={onClose}
             className="text-gray-500 hover:text-white transition-colors"
@@ -155,7 +158,6 @@ export default function NewApplicationModal({
         </div>
 
         <form onSubmit={handleSubmit} className="space-y-4">
-          {/* Nombre de Empresa */}
           <input
             required
             className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-white placeholder:text-gray-600 outline-none focus:ring-2 focus:ring-purple-500/50 transition-all"
@@ -166,11 +168,10 @@ export default function NewApplicationModal({
             }
           />
 
-          {/* Selector de CV (Opcional) */}
           <div className="space-y-2 group">
             <div className="flex justify-between items-center px-1">
               <span className="text-[10px] text-gray-500 font-bold uppercase tracking-wider group-focus-within:text-purple-400 transition-colors">
-                CV Utilizado (Opcional)
+                CV utilizado (opcional)
               </span>
 
               {formData.appliedCvId && (
@@ -200,7 +201,7 @@ export default function NewApplicationModal({
                 }
               >
                 <option value="" className="bg-[#0f0f15] text-gray-500">
-                  Ningún CV seleccionado
+                  NingÃºn CV seleccionado
                 </option>
 
                 {cvVersions.map((cv) => (
@@ -209,7 +210,7 @@ export default function NewApplicationModal({
                     value={cv.id}
                     className="bg-[#0f0f15] text-white"
                   >
-                    {`📄 CV - ${new Date(cv.date).toLocaleDateString()} (${cv.score} pts)`}
+                    {`CV - ${new Date(cv.date).toLocaleDateString()} (${cv.score} pts)`}
                   </option>
                 ))}
               </select>
@@ -225,15 +226,14 @@ export default function NewApplicationModal({
             </div>
 
             <p className="text-[10px] text-gray-600 italic px-1 leading-relaxed">
-              Vincular tu CV te permite analizar qué versión tiene mejor tasa de
-              conversión en tus postulaciones.
+              Vincular tu CV te permite analizar quÃ© versiÃ³n tiene mejor tasa de
+              conversiÃ³n en tus postulaciones.
             </p>
           </div>
 
-          {/* Categoría (Role Category) */}
           <div className="space-y-2">
             <span className="text-[10px] text-gray-500 font-bold uppercase ml-1">
-              Categoría
+              CategorÃ­a
             </span>
             <div className="grid grid-cols-3 gap-2">
               {[
@@ -262,11 +262,10 @@ export default function NewApplicationModal({
             </div>
           </div>
 
-          {/* Modalidad (Mode) */}
           <div className="flex gap-2 p-1 bg-white/5 rounded-xl border border-white/5">
             {[
               { id: "remote", label: "Remoto" },
-              { id: "hibrido", label: "Híbrido" },
+              { id: "hibrido", label: "HÃ­brido" },
               { id: "presencial", label: "Presencial" },
             ].map((m) => (
               <button
@@ -284,7 +283,6 @@ export default function NewApplicationModal({
             ))}
           </div>
 
-          {/* URL de la Vacante */}
           <div className="relative">
             <LinkIcon
               className="absolute left-4 top-3.5 text-gray-600"
@@ -300,11 +298,10 @@ export default function NewApplicationModal({
             />
           </div>
 
-          {/* Match Level (Slider) */}
           <div className="space-y-3">
             <div className="flex justify-between items-end">
               <span className="text-xs text-gray-500 font-bold uppercase">
-                Nivel de Match
+                Nivel de match
               </span>
               <span className="text-purple-400 font-black text-lg">
                 {formData.matchLevel}
@@ -320,13 +317,12 @@ export default function NewApplicationModal({
               onChange={(e) =>
                 setFormData({
                   ...formData,
-                  matchLevel: parseInt(e.target.value),
+                  matchLevel: parseInt(e.target.value, 10),
                 })
               }
             />
           </div>
 
-          {/* Mensaje / Notas */}
           <textarea
             className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-white placeholder:text-gray-600 outline-none focus:ring-2 focus:ring-purple-500/50 transition-all resize-none h-24"
             placeholder="Mensaje (ej: Proceso iniciado desde LinkedIn...)"
@@ -340,7 +336,7 @@ export default function NewApplicationModal({
             disabled={loading}
             className="w-full bg-purple-600 hover:bg-purple-700 text-white font-black py-4 rounded-xl shadow-xl shadow-purple-600/20 transition-all disabled:opacity-50 active:scale-[0.98] cursor-pointer"
           >
-            {loading ? "REGISTRANDO..." : "REGISTRAR POSTULACIÓN"}
+            {loading ? "REGISTRANDO..." : "REGISTRAR POSTULACIÃ“N"}
           </button>
         </form>
       </div>
