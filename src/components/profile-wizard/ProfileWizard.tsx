@@ -11,6 +11,8 @@ import StepFinal from "./StepFinal";
 import StepNetworks from "./StepNetworks";
 import { toast } from "sonner";
 import { useSession } from "next-auth/react";
+import { apiClientRequest } from "@/lib/api-client";
+import { handleApiError } from "@/utils/error-handler";
 
 export default function ProfileWizard() {
   const { data: session } = useSession();
@@ -88,7 +90,6 @@ export default function ProfileWizard() {
             }
           />
         );
-
       case 2:
         return (
           <StepLocation
@@ -106,7 +107,6 @@ export default function ProfileWizard() {
             }
           />
         );
-
       case 3:
         return (
           <StepSeniority
@@ -126,7 +126,6 @@ export default function ProfileWizard() {
             isCoherent={isExperienceCoherent()}
           />
         );
-
       case 4:
         return (
           <StepStack
@@ -148,7 +147,6 @@ export default function ProfileWizard() {
             }
           />
         );
-
       case 5:
         return (
           <StepApplicationStrategy
@@ -170,7 +168,6 @@ export default function ProfileWizard() {
             }
           />
         );
-
       case 6:
         return (
           <StepNetworks
@@ -184,7 +181,6 @@ export default function ProfileWizard() {
             }
           />
         );
-
       case 7:
         return (
           <StepFinal
@@ -198,13 +194,15 @@ export default function ProfileWizard() {
             }
           />
         );
+      default:
+        return null;
     }
   };
 
   const getRecommendedSeniority = () => {
-    const { yearsExperience } = formData;
-
-    if (!yearsExperience) return null;
+    if (!formData.yearsExperience) {
+      return null;
+    }
 
     const map: Record<string, string> = {
       "0-1": "Trainee",
@@ -213,7 +211,7 @@ export default function ProfileWizard() {
       "5+": "Senior",
     };
 
-    return map[yearsExperience] || null;
+    return map[formData.yearsExperience] || null;
   };
 
   const isExperienceCoherent = () => {
@@ -227,21 +225,18 @@ export default function ProfileWizard() {
     switch (step) {
       case 1:
         return cvFile !== null && formData.isRoleOptimized !== null;
-
       case 2:
         return (
           formData.location?.trim().length > 0 &&
           formData.workPreference !== null &&
           formData.englishLevel !== null
         );
-
       case 3:
         return (
-          formData.targetRole?.trim() !== "" &&
+          formData.targetRole.trim() !== "" &&
           formData.seniority !== "" &&
           formData.yearsExperience !== ""
         );
-
       case 4:
         return (
           formData.stack.length > 0 &&
@@ -249,14 +244,12 @@ export default function ProfileWizard() {
           formData.stackExperienceType.length > 0 &&
           formData.stackMatchesCV !== null
         );
-
       case 5:
         return (
           formData.recentApplications.length > 0 &&
           formData.applicationType.length > 0
         );
-
-      case 6:
+      case 6: {
         const { portfolio, linkedin, github } = formData.portfolioLinks;
         const { linkStatus } = formData;
 
@@ -265,16 +258,16 @@ export default function ProfileWizard() {
           (linkStatus.linkedin !== "yes" || linkedin.trim() !== "") &&
           (linkStatus.github !== "yes" || github.trim() !== "")
         );
-
+      }
       case 7:
         return formData.consentToShareData === true;
+      default:
+        return false;
     }
   };
 
   const handleFinish = async () => {
-    const userId = session?.user?.id;
-
-    if (!userId) {
+    if (!session?.accessToken) {
       toast.error("No se encontró una sesión activa. Por favor, reingresa.");
       return;
     }
@@ -297,73 +290,61 @@ export default function ProfileWizard() {
     };
 
     try {
-      const {
-        linkStatus,
-        portfolioLinks,
-        targetRole,
-        seniority,
-        stackMatchesCV,
-        consentToShareData,
-        ...restOfFormData
-      } = formData;
+      const { linkStatus, portfolioLinks, targetRole, seniority, ...rest } =
+        formData;
 
       const formDataToSend = new FormData();
 
-      if (cvFile) formDataToSend.append("cvFile", cvFile);
+      if (cvFile) {
+        formDataToSend.append("cvFile", cvFile);
+      }
 
-      const finalRole =
-        roleMapping[targetRole.trim().toLowerCase()] || "fullstack";
-      const finalSeniority =
-        seniorityMap[seniority.trim().toLowerCase()] || "jr";
-
-      formDataToSend.append("targetRole", finalRole);
-      formDataToSend.append("seniority", finalSeniority);
+      formDataToSend.append(
+        "targetRole",
+        roleMapping[targetRole.trim().toLowerCase()] || "fullstack",
+      );
+      formDataToSend.append(
+        "seniority",
+        seniorityMap[seniority.trim().toLowerCase()] || "jr",
+      );
       formDataToSend.append("cvType", "file");
-
       formDataToSend.append("portfolio", portfolioLinks.portfolio);
       formDataToSend.append("linkedin", portfolioLinks.linkedin);
       formDataToSend.append("github", portfolioLinks.github);
-
       formDataToSend.append("stackMatchesCV", String(formData.stackMatchesCV));
-
       formDataToSend.append(
         "consentToShareData",
         String(formData.consentToShareData),
       );
 
-      Object.entries(restOfFormData).forEach(([key, value]) => {
-        if (value !== undefined && value !== null) {
-          if (Array.isArray(value)) {
-            value.forEach((v) => formDataToSend.append(`${key}[]`, v));
-          } else {
-            formDataToSend.append(key, value.toString());
-          }
+      Object.entries(rest).forEach(([key, value]) => {
+        if (value === undefined || value === null) {
+          return;
         }
+
+        if (Array.isArray(value)) {
+          value.forEach((item) => formDataToSend.append(`${key}[]`, item));
+          return;
+        }
+
+        if (typeof value === "object") {
+          return;
+        }
+
+        formDataToSend.append(key, String(value));
       });
 
-      const response = await fetch(
-        `${process.env.NEXT_PUBLIC_API_URL}/api/users/${userId}/profile`,
-        {
-          method: "PATCH",
-          body: formDataToSend,
-        },
-      );
+      await apiClientRequest("/api/users/me/profile", {
+        method: "PATCH",
+        auth: true,
+        session,
+        body: formDataToSend,
+      });
 
-      const result = await response.json();
-
-      if (response.ok) {
-        toast.success("¡Perfil completado con éxito!");
-        window.location.href = "/home";
-      } else {
-        console.error("Errores del backend:", result.message);
-        throw new Error(
-          Array.isArray(result.message)
-            ? result.message.join(" | ")
-            : result.message,
-        );
-      }
-    } catch (error: any) {
-      toast.error("Hubo un error al guardar tus datos: " + error.message);
+      toast.success("Perfil completado con éxito");
+      window.location.href = "/home";
+    } catch (error) {
+      handleApiError(error, "Hubo un error al guardar tus datos");
     }
   };
 
@@ -371,7 +352,7 @@ export default function ProfileWizard() {
     <div className="w-6xl flex flex-col py-10 px-6 space-y-20">
       <div className="flex justify-between items-center mb-4">
         <button
-          onClick={step === 1 ? prevStep : prevStep}
+          onClick={prevStep}
           className="flex items-center gap-2 text-gray-400 hover:text-white transition-colors text-sm"
         >
           {step === 1 ? (
@@ -394,10 +375,9 @@ export default function ProfileWizard() {
           style={{ width: `${(step / 7) * 100}%` }}
         />
       </div>
-      {/* Paso dinámico */}
+
       <div className="flex-1 space-y-8">{renderStep()}</div>
 
-      {/* Botón Continuar */}
       <div className="flex justify-end">
         <button
           onClick={nextStep}

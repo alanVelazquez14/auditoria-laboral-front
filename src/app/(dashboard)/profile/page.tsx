@@ -1,53 +1,46 @@
 "use client";
+
 import ProfilePage from "@/components/profilePage/ProfilePage";
 import { useEffect, useState } from "react";
-import { useSession, signOut } from "next-auth/react";
+import { useSession } from "next-auth/react";
 import { toast } from "sonner";
+import { apiClientRequest } from "@/lib/api-client";
+import { handleApiError } from "@/utils/error-handler";
+import type { BackendUserMe } from "@/types/backend";
 
 export default function ProfileContainer() {
   const { data: session, status } = useSession();
-  const [user, setUser] = useState(null);
+  const [user, setUser] = useState<BackendUserMe | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  const userId = session?.user?.id;
-  const token = session?.accessToken;
-
   useEffect(() => {
     const fetchUser = async () => {
-      if (status !== "authenticated" || !userId || !token) {
-        if (status === "unauthenticated") setLoading(false);
+      if (status !== "authenticated") {
+        if (status === "unauthenticated") {
+          setLoading(false);
+        }
         return;
       }
+
       try {
         setLoading(true);
         setError(null);
 
-        const response = await fetch(
-          `${process.env.NEXT_PUBLIC_API_URL}/api/users/${userId}`,
-          {
-            method: "GET",
-            headers: {
-              "Content-Type": "application/json",
-              Authorization: `Bearer ${token}`,
-            },
-          },
-        );
+        const data = await apiClientRequest<BackendUserMe>("/api/users/me", {
+          method: "GET",
+          auth: true,
+          session,
+        });
 
-        if (!response.ok) {
-          if (response.status === 401) {
-            signOut({ callbackUrl: "/auth" });
-            throw new Error("Sesión expirada. Redirigiendo...");
-          }
-          throw new Error("No se pudieron cargar tus datos de perfil.");
-        }
-
-        const data = await response.json();
         setUser(data);
-      } catch (err: any) {
-        setError(err.message);
+      } catch (err) {
+        const message = err instanceof Error ? err.message : "Error desconocido";
+
+        setError(message);
+        handleApiError(err, "Error al cargar el perfil");
         toast.error("Error al cargar el perfil", {
-          description: err.message,
+          description: message,
           style: {
             background: "#121217",
             color: "#fff",
@@ -59,8 +52,8 @@ export default function ProfileContainer() {
       }
     };
 
-    fetchUser();
-  }, [status, userId, token]);
+    void fetchUser();
+  }, [session, status]);
 
   if (status === "unauthenticated") {
     return (
@@ -73,7 +66,7 @@ export default function ProfileContainer() {
   if (status === "loading" || (loading && !user)) {
     return (
       <div className="flex items-center justify-center min-h-screen bg-background">
-        <div className="animate-spin rounded-full h-10 w-10 border-t-2 border-brand-purple"></div>
+        <div className="animate-spin rounded-full h-10 w-10 border-t-2 border-brand-purple" />
       </div>
     );
   }
@@ -92,6 +85,10 @@ export default function ProfileContainer() {
         </div>
       </div>
     );
+  }
+
+  if (!user) {
+    return null;
   }
 
   return <ProfilePage userData={user} />;

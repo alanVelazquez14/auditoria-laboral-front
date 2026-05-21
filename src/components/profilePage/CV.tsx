@@ -1,4 +1,5 @@
 "use client";
+
 import {
   FileText,
   Upload,
@@ -10,21 +11,33 @@ import {
 import { useState, useRef } from "react";
 import { toast } from "sonner";
 import AnalysisReport from "./AnalysisReport";
-import { getSession } from "next-auth/react";
+import { useSession } from "next-auth/react";
 import { handleApiError } from "@/utils/error-handler";
 import DiagnosticQuota from "./DiagnosticQuota";
+import { apiClientRequest } from "@/lib/api-client";
+import {
+  extractUserCvAnalysis,
+  normalizeCvAnalysis,
+  type CvAnalysis,
+} from "@/lib/cv-analysis";
+import type {
+  BackendCvUploadResponse,
+  BackendUserMe,
+} from "@/types/backend";
 
-export default function CV({ userData }: { userData: any }) {
+export default function CV({ userData }: { userData: BackendUserMe }) {
+  const { data: session } = useSession();
   const [refreshQuota, setRefreshQuota] = useState(0);
   const [remainingCredits, setRemainingCredits] = useState<number | null>(null);
   const [isUploading, setIsUploading] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
-  const [mockResult, setMockResult] = useState<any>(
-    userData.lastAnalysis || null,
+  const initialAnalysis = extractUserCvAnalysis(userData);
+  const [analysisResult, setAnalysisResult] = useState<CvAnalysis | null>(
+    initialAnalysis,
   );
   const [analysisStatus, setAnalysisStatus] = useState<
     "idle" | "analyzing" | "done"
-  >(userData.lastAnalysis ? "done" : "idle");
+  >(initialAnalysis ? "done" : "idle");
 
   const isButtonDisabled =
     isUploading || (remainingCredits !== null && remainingCredits <= 0);
@@ -44,31 +57,20 @@ export default function CV({ userData }: { userData: any }) {
       setIsUploading(true);
       setAnalysisStatus("analyzing");
 
-      const session = await getSession();
-      const token = session?.accessToken;
-
-      const response = await fetch(
-        `${process.env.NEXT_PUBLIC_API_URL}/api/users/upload-cv`,
+      const result = await apiClientRequest<BackendCvUploadResponse>(
+        "/api/users/upload-cv",
         {
           method: "POST",
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
+          auth: true,
+          session,
           body: formData,
         },
       );
 
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw errorData;
-      }
-
-      const result = await response.json();
-
-      setMockResult(result);
+      setAnalysisResult(normalizeCvAnalysis(result));
       setAnalysisStatus("done");
       setRefreshQuota((prev) => prev + 1);
-      toast.success("¡CV analizado con éxito!");
+      toast.success("CV analizado con éxito");
     } catch (error) {
       setAnalysisStatus("idle");
       handleApiError(error, "Error al procesar");
@@ -83,7 +85,6 @@ export default function CV({ userData }: { userData: any }) {
         refreshTrigger={refreshQuota}
         onQuotaChange={(count) => setRemainingCredits(count)}
       />
-      {/* Header */}
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-2 text-white font-bold text-lg">
           <FileText size={20} className="text-brand-purple" />
@@ -93,7 +94,7 @@ export default function CV({ userData }: { userData: any }) {
         {analysisStatus !== "analyzing" &&
           (userData.stackMatchesCV ? (
             <span className="text-[10px] bg-green-500/10 text-green-500 px-2 py-1 rounded-full border border-green-500/20 flex items-center gap-1">
-              <CheckCircle2 size={10} /> CV Sincronizado
+              <CheckCircle2 size={10} /> CV sincronizado
             </span>
           ) : (
             <span className="text-[10px] bg-yellow-500/10 text-yellow-500 px-2 py-1 rounded-full border border-yellow-500/20 flex items-center gap-1">
@@ -102,7 +103,6 @@ export default function CV({ userData }: { userData: any }) {
           ))}
       </div>
 
-      {/* Estado: Analizando (Skeleton / Loader) */}
       {analysisStatus === "analyzing" ? (
         <div className="p-8 border-2 border-dashed border-brand-purple/30 bg-brand-purple/5 rounded-2xl flex flex-col items-center justify-center text-center animate-pulse">
           <Loader2 className="text-brand-purple animate-spin mb-3" size={32} />
@@ -115,7 +115,6 @@ export default function CV({ userData }: { userData: any }) {
         </div>
       ) : (
         <>
-          {/* Visualización de CV Actual */}
           {userData.cvUrl ? (
             <div className="p-5 bg-background border border-gray-800 rounded-2xl flex items-center justify-between group hover:border-brand-purple/30 transition-all">
               <div className="flex items-center gap-4">
@@ -124,11 +123,10 @@ export default function CV({ userData }: { userData: any }) {
                 </div>
                 <div>
                   <p className="text-sm text-white font-semibold">
-                    Mi Currículum Actual
+                    Mi currículum actual
                   </p>
                   <p className="text-[11px] text-gray-500 uppercase tracking-tighter">
-                    Analizado:{" "}
-                    {new Date(userData.updatedAt).toLocaleDateString()}
+                    Analizado: {new Date(userData.updatedAt ?? Date.now()).toLocaleDateString()}
                   </p>
                 </div>
               </div>
@@ -151,11 +149,10 @@ export default function CV({ userData }: { userData: any }) {
             </div>
           )}
 
-          {analysisStatus === "done" && mockResult && (
-            <AnalysisReport data={mockResult} />
+          {analysisStatus === "done" && analysisResult && (
+            <AnalysisReport data={analysisResult} />
           )}
 
-          {/* Input oculto y Botón de Acción */}
           <input
             type="file"
             ref={fileInputRef}
@@ -188,7 +185,7 @@ export default function CV({ userData }: { userData: any }) {
                 ? "Límite diario alcanzado"
                 : userData.cvUrl
                   ? "Re-analizar CV"
-                  : "Subir Currículum (PDF)"}
+                  : "Subir currículum (PDF)"}
           </button>
           {remainingCredits !== null && (
             <div className="flex justify-between items-center px-1 opacity-60">
@@ -196,7 +193,9 @@ export default function CV({ userData }: { userData: any }) {
                 Créditos disponibles
               </span>
               <span
-                className={`text-[13px] font-bold ${remainingCredits > 0 ? "text-brand-purple" : "text-red-500"}`}
+                className={`text-[13px] font-bold ${
+                  remainingCredits > 0 ? "text-brand-purple" : "text-red-500"
+                }`}
               >
                 {remainingCredits} / 5
               </span>
@@ -206,7 +205,7 @@ export default function CV({ userData }: { userData: any }) {
       )}
 
       <p className="text-[12px] text-gray-600 text-center uppercase tracking-widest mt-4">
-        Optimizado para filtros ATS e Inteligencia Artificial
+        Optimizado para filtros ATS e inteligencia artificial
       </p>
     </section>
   );

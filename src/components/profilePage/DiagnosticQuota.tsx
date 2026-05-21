@@ -1,7 +1,9 @@
 "use client";
+
 import { useEffect, useState } from "react";
-import { getSession } from "next-auth/react";
-import { Zap } from "lucide-react";
+import { useSession } from "next-auth/react";
+import { apiClientRequest } from "@/lib/api-client";
+import type { BackendQuotaResponse } from "@/types/backend";
 
 export default function DiagnosticQuota({
   refreshTrigger,
@@ -10,33 +12,32 @@ export default function DiagnosticQuota({
   refreshTrigger?: number;
   onQuotaChange?: (remaining: number) => void;
 }) {
-  const [quota, setQuota] = useState<{
-    allowed: boolean;
-    remaining: number;
-  } | null>(null);
-
-  const fetchQuota = async () => {
-    try {
-      const session = await getSession();
-      const res = await fetch(
-        `${process.env.NEXT_PUBLIC_API_URL}/api/users/me/quota`,
-        {
-          headers: { Authorization: `Bearer ${session?.accessToken}` },
-        },
-      );
-      if (res.ok) {
-        const data = await res.json();
-        setQuota(data);
-        if (onQuotaChange) onQuotaChange(data.remaining);
-      }
-    } catch (error) {
-      console.error("Error al obtener cuota", error);
-    }
-  };
+  const { data: session, status } = useSession();
+  const [quota, setQuota] = useState<BackendQuotaResponse | null>(null);
 
   useEffect(() => {
-    fetchQuota();
-  }, [refreshTrigger]);
+    const fetchQuota = async () => {
+      if (status !== "authenticated") {
+        return;
+      }
 
-  return null;
+      try {
+        const data = await apiClientRequest<BackendQuotaResponse>(
+          "/api/users/me/quota",
+          {
+          auth: true,
+          session,
+        });
+
+        setQuota(data);
+        onQuotaChange?.(data.remaining);
+      } catch (error) {
+        console.error("Error al obtener cuota", error);
+      }
+    };
+
+    void fetchQuota();
+  }, [onQuotaChange, refreshTrigger, session, status]);
+
+  return quota ? null : null;
 }

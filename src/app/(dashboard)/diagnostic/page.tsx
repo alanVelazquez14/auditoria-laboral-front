@@ -1,4 +1,5 @@
 "use client";
+
 import { useDiagnostics } from "@/hooks/useDiagnostics";
 import { useRouter } from "next/navigation";
 import { useEffect, useMemo, useState } from "react";
@@ -9,46 +10,43 @@ import { getIcon, getIconColor } from "@/components/diagnosticPage/GetIcon";
 import PageTransition from "@/components/PageTransition";
 import { ISSUE_LABELS } from "@/lib/diagnosticLabels";
 import { TechnicalHealthCard } from "@/components/diagnosticPage/TechnicalHealthCard";
+import { apiClientRequest } from "@/lib/api-client";
+import { handleApiError } from "@/utils/error-handler";
+import { extractUserCvAnalysis, type CvAnalysis } from "@/lib/cv-analysis";
+import type {
+  BackendDiagnosticsSummary,
+  BackendDiagnostic,
+  BackendUserMe,
+} from "@/types/backend";
 
-export interface Diagnostic {
-  id: string;
-  issue: string;
-  priority: "high" | "medium" | "low";
-  recommendedAction: string;
-  notRecommendedAction: string;
-  generatedAt: string;
-  explanation?: string;
-}
-
-export interface DiagnosticData {
-  score: any;
-  diagnostics: Diagnostic[];
-  totalApplications: number;
-  lastUpdate: string | null;
-}
+export type Diagnostic = BackendDiagnostic;
+export type DiagnosticData = BackendDiagnosticsSummary;
 
 export default function DiagnosticsPage() {
   const { data: session, status } = useSession();
   const router = useRouter();
   const { data, loading, generateNew } = useDiagnostics();
   const [expandedId, setExpandedId] = useState<string | null>(null);
-
-  const [analysis, setAnalysis] = useState<any>(null);
+  const [analysis, setAnalysis] = useState<CvAnalysis | null>(null);
 
   useEffect(() => {
-    if (!session?.user?.id) return;
+    if (status !== "authenticated") return;
 
     const fetchUser = async () => {
-      const res = await fetch(
-        `${process.env.NEXT_PUBLIC_API_URL}/api/users/${session.user.id}`,
-      );
-      const user = await res.json();
+      try {
+        const user = await apiClientRequest<BackendUserMe>("/api/users/me", {
+          auth: true,
+          session,
+        });
 
-      setAnalysis(user.lastAnalysis);
+        setAnalysis(extractUserCvAnalysis(user));
+      } catch (error) {
+        handleApiError(error, "No pudimos cargar el análisis técnico");
+      }
     };
 
-    fetchUser();
-  }, [session]);
+    void fetchUser();
+  }, [session, status]);
 
   const diagnostics = useMemo(() => {
     const currentServerDiags = Array.isArray(data)
@@ -74,15 +72,16 @@ export default function DiagnosticsPage() {
     return [];
   }, [data]);
 
-  if (status === "loading" || loading)
+  if (status === "loading" || loading) {
     return (
       <div className="flex flex-col items-center justify-center min-h-screen text-white bg-background">
-        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-brand-purple mb-4"></div>
+        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-brand-purple mb-4" />
         <p className="animate-pulse text-gray-400">
           Analizando tus patrones...
         </p>
       </div>
     );
+  }
 
   if (status === "unauthenticated") {
     return (
@@ -91,10 +90,10 @@ export default function DiagnosticsPage() {
           Por favor, inicia sesión para ver tu diagnóstico.
         </p>
         <button
-          onClick={() => router.push("/login")}
+          onClick={() => router.push("/auth")}
           className="bg-brand-purple px-6 py-2 rounded-lg text-white font-bold"
         >
-          Ir al Login
+          Ir al login
         </button>
       </div>
     );
@@ -125,13 +124,12 @@ export default function DiagnosticsPage() {
                 Analizando...
               </>
             ) : (
-              "Re-evaluar Perfil"
+              "Re-evaluar perfil"
             )}
           </button>
         </header>
         <TechnicalHealthCard analysis={analysis} />
 
-        {/* --- STATS GRID --- */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-10">
           <StatCard
             label="Alta prioridad"
@@ -150,7 +148,6 @@ export default function DiagnosticsPage() {
           />
         </div>
 
-        {/* --- DIAGNOSTICS LIST (Accordions) --- */}
         {loading ? (
           <DiagnosticSkeleton />
         ) : diagnostics.length === 0 ? (
@@ -158,13 +155,13 @@ export default function DiagnosticsPage() {
             <div className="bg-brand-purple/10 p-5 rounded-full mb-6">
               <Rocket className="text-brand-purple w-10 h-10" />
             </div>
-            <h2 className="text-xl font-bold mb-2">¡Todo despejado!</h2>
+            <h2 className="text-xl font-bold mb-2">Todo despejado</h2>
             <p className="text-gray-400 max-w-md mb-8">
               No hemos detectado problemas críticos en tu perfil. Sigue
               postulando para que podamos realizar un análisis más profundo.
             </p>
             <button
-              onClick={() => (window.location.href = "/applications")}
+              onClick={() => router.push("/applications")}
               className="text-brand-purple border border-brand-purple/30 px-6 py-2 rounded-full hover:bg-brand-purple/10 transition cursor-pointer active:scale-95"
             >
               Cargar nuevas postulaciones
@@ -207,7 +204,7 @@ export default function DiagnosticsPage() {
                       >
                         {diag.priority === "high"
                           ? "Crítico"
-                          : "Mejora Sugerida"}
+                          : "Mejora sugerida"}
                       </span>
                     </div>
                   </div>
@@ -230,7 +227,7 @@ export default function DiagnosticsPage() {
                           Análisis detallado
                         </p>
                         <p className="text-sm text-gray-300 leading-relaxed italic">
-                          "{diag.explanation}"
+                          &quot;{diag.explanation}&quot;
                         </p>
                       </div>
                     )}
@@ -277,15 +274,15 @@ const DiagnosticSkeleton = () => (
         className="bg-card-bg border border-gray-800 rounded-xl p-5 animate-pulse"
       >
         <div className="flex items-center gap-4 mb-4">
-          <div className="w-10 h-10 bg-gray-700 rounded-lg"></div>
+          <div className="w-10 h-10 bg-gray-700 rounded-lg" />
           <div className="space-y-2">
-            <div className="h-4 w-32 bg-gray-700 rounded"></div>
-            <div className="h-3 w-20 bg-gray-700 rounded"></div>
+            <div className="h-4 w-32 bg-gray-700 rounded" />
+            <div className="h-3 w-20 bg-gray-700 rounded" />
           </div>
         </div>
-        <div className="h-px bg-gray-800 w-full mb-4"></div>
+        <div className="h-px bg-gray-800 w-full mb-4" />
         <div className="space-y-3">
-          <div className="h-12 bg-gray-800/50 rounded-lg w-full"></div>
+          <div className="h-12 bg-gray-800/50 rounded-lg w-full" />
         </div>
       </div>
     ))}

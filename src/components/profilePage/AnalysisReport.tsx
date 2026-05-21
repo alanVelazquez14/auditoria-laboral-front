@@ -1,9 +1,17 @@
 "use client";
-import { CheckCircle2, XCircle, Lightbulb, ArrowUpRight } from "lucide-react";
+
+import {
+  CheckCircle2,
+  XCircle,
+  Lightbulb,
+  ArrowUpRight,
+  FileSearch,
+} from "lucide-react";
 import { useState } from "react";
 import AtsGuideModal from "./AtsGuideModal";
+import type { CvAnalysis } from "@/lib/cv-analysis";
 
-export default function AnalysisReport({ data }: { data: any }) {
+export default function AnalysisReport({ data }: { data: CvAnalysis }) {
   const [isGuideOpen, setIsGuideOpen] = useState(false);
 
   const getScoreColor = (score: number) => {
@@ -21,15 +29,12 @@ export default function AnalysisReport({ data }: { data: any }) {
   return (
     <>
       <div className="mt-6 space-y-6 animate-in fade-in slide-in-from-top-4 duration-500">
-        {/* Score Header */}
         <div className="bg-background/50 border border-gray-800 p-6 rounded-2xl">
           <div className="flex justify-between items-end mb-2">
             <span className="text-xs text-gray-500 uppercase font-bold tracking-widest">
-              Puntaje de Compatibilidad ATS
+              Puntaje de compatibilidad ATS
             </span>
-            <span
-              className={`text-3xl font-black ${getScoreColor(data.score)}`}
-            >
+            <span className={`text-3xl font-black ${getScoreColor(data.score)}`}>
               {data.score}%
             </span>
           </div>
@@ -41,11 +46,22 @@ export default function AnalysisReport({ data }: { data: any }) {
           </div>
         </div>
 
-        {/* Lista de Verificaciones */}
+        <div className="bg-card-bg/30 border border-gray-800/50 p-5 rounded-2xl flex gap-4">
+          <div className="bg-brand-purple/10 p-2 rounded-lg h-fit">
+            <FileSearch className="text-brand-purple" size={18} />
+          </div>
+          <div>
+            <p className="text-brand-purple font-bold text-sm">Resumen</p>
+            <p className="text-gray-300 text-sm mt-1 leading-relaxed">
+              {data.summary}
+            </p>
+          </div>
+        </div>
+
         <div className="grid grid-cols-1 gap-3">
-          {data.checks.map((check: any, index: number) => (
+          {data.checks.map((check, index) => (
             <div
-              key={index}
+              key={`${check.label}-${index}`}
               className="flex items-start gap-4 p-4 rounded-xl border border-gray-800/50 bg-card-bg/30"
             >
               {check.passed ? (
@@ -63,17 +79,16 @@ export default function AnalysisReport({ data }: { data: any }) {
           ))}
         </div>
 
-        {/* Tip de IA */}
         <div className="bg-brand-purple/10 border border-brand-purple/20 p-5 rounded-2xl flex gap-4">
           <div className="bg-brand-purple p-2 rounded-lg h-fit">
             <Lightbulb className="text-white" size={18} />
           </div>
           <div>
             <p className="text-brand-purple font-bold text-sm">
-              Sugerencia Estratégica
+              Sugerencia estratégica
             </p>
             <p className="text-gray-300 text-xs mt-1 leading-relaxed italic">
-              "{data.improvementTip}"
+              &quot;{data.improvementTip}&quot;
             </p>
           </div>
         </div>

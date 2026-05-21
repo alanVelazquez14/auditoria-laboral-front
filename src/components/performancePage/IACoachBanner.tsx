@@ -2,8 +2,9 @@
 import { Zap, Eye } from "lucide-react";
 import Link from "next/link";
 import { toast } from "sonner";
+import type { BackendCvPerformanceItem } from "@/types/backend";
 
-export function IACoachBanner({ data }: { data: any[] }) {
+export function IACoachBanner({ data }: { data: BackendCvPerformanceItem[] }) {
   const bestCv =
     data && data.length > 0
       ? [...data].sort(
@@ -11,7 +12,7 @@ export function IACoachBanner({ data }: { data: any[] }) {
         )[0]
       : null;
 
-  const handleView = (url?: string) => {
+  const handleView = (url?: string | null) => {
     if (!url) {
       console.error("DEBUG: Objeto bestCv actual:", bestCv);
       toast.error("No hay URL disponible para este CV");

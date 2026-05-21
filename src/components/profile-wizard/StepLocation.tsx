@@ -83,7 +83,6 @@ export default function StepLocation({
             onBlur={() => setTimeout(() => setIsFocused(false), 150)}
           />
 
-          {/* Dropdown */}
           {isFocused && suggestions.length > 0 && (
             <div className="absolute z-50 mt-2 w-full bg-[#1a1a24] border border-white/10 rounded-xl overflow-hidden shadow-lg">
               {suggestions.map((item) => (
@@ -153,7 +152,7 @@ export default function StepLocation({
 
       <div className="bg-[#1a1a24] p-4 rounded-xl border border-white/5">
         <p className="text-purple-400/80 text-[15px] text-center">
-          La ubicacion impacta directamente en las oportunidades disponibles.
+          La ubicación impacta directamente en las oportunidades disponibles.
         </p>
       </div>
     </div>

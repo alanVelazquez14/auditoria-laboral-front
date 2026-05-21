@@ -1,6 +1,7 @@
 import { Target, UserCheck, XCircle, Briefcase } from "lucide-react";
+import type { BackendCvPerformanceItem } from "@/types/backend";
 
-export function StatsCards({ data }: { data: any[] }) {
+export function StatsCards({ data }: { data: BackendCvPerformanceItem[] }) {
   const totalApps = data.reduce((acc, curr) => acc + curr.totalApplications, 0);
   const avgSuccess =
     data.length > 0

@@ -1,38 +1,50 @@
 "use client";
+
+import { apiClientRequest } from "@/lib/api-client";
+import { handleApiError } from "@/utils/error-handler";
+import type { BackendCvPerformanceItem } from "@/types/backend";
 import { useSession } from "next-auth/react";
 import { useState, useEffect } from "react";
 
 export function useCvAnalytics() {
   const { data: session, status } = useSession();
-  const [data, setData] = useState<any[]>([]);
+  const [data, setData] = useState<BackendCvPerformanceItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    const userId = session?.user?.id;
-    if (status === "loading") return;
-    if (!userId) {
+    if (status === "loading") {
+      return;
+    }
+
+    if (status !== "authenticated") {
       setLoading(false);
       return;
     }
 
     const fetchData = async () => {
       try {
-        const response = await fetch(
-          `${process.env.NEXT_PUBLIC_API_URL}/api/analytics/cv-performance/${userId}`,
+        const json = await apiClientRequest<BackendCvPerformanceItem[]>(
+          "/api/analytics/cv-performance",
+          {
+            auth: true,
+            session,
+          },
         );
-        if (!response.ok) throw new Error("Error al cargar analíticas");
-        const json = await response.json();
+
         setData(json);
-      } catch (err: any) {
-        setError(err.message);
+      } catch (err) {
+        const message = err instanceof Error ? err.message : "Error desconocido";
+
+        setError(message);
+        handleApiError(err, "No pudimos cargar las analÃ­ticas");
       } finally {
         setLoading(false);
       }
     };
 
-    fetchData();
-  }, []);
-  
+    void fetchData();
+  }, [session, status]);
+
   return { data, loading: loading || status === "loading", error };
 }

@@ -1,58 +1,80 @@
 "use client";
+
+import { apiClientRequest } from "@/lib/api-client";
+import { handleApiError } from "@/utils/error-handler";
+import type {
+  BackendCvHistoryConversionItem,
+  BackendCvHistoryEvolutionItem,
+} from "@/types/backend";
 import { useState, useEffect } from "react";
 import { useSession } from "next-auth/react";
 
+export type CvPerformanceTimelinePoint = {
+  cvId: string;
+  score: number;
+  versionDate: string;
+  cvUrl: string | null;
+  efficiency: number;
+  totalApplied: number;
+};
+
 export function useCvPerformance() {
-  const { data: session } = useSession();
-  const [performanceData, setPerformanceData] = useState<any[]>([]);
+  const { data: session, status } = useSession();
+  const [performanceData, setPerformanceData] = useState<
+    CvPerformanceTimelinePoint[]
+  >([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     const fetchData = async () => {
-      if (!session?.accessToken) return;
+      if (status !== "authenticated") {
+        setLoading(status === "loading");
+        return;
+      }
 
       try {
-        const headers = {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${session.accessToken}`,
-        };
-
-        const [evolRaw, convRaw] = await Promise.all([
-          fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/cv-history/evolution`, {
-            headers,
-          }).then((res) => res.json()),
-          fetch(
-            `${process.env.NEXT_PUBLIC_API_URL}/api/cv-history/conversion`,
-            { headers },
-          ).then((res) => res.json()),
+        const [evolution, conversion] = await Promise.all([
+          apiClientRequest<BackendCvHistoryEvolutionItem[]>(
+            "/api/cv-history/evolution",
+            {
+              auth: true,
+              session,
+            },
+          ),
+          apiClientRequest<BackendCvHistoryConversionItem[]>(
+            "/api/cv-history/conversion",
+            {
+              auth: true,
+              session,
+            },
+          ),
         ]);
 
-        const evol = Array.isArray(evolRaw) ? evolRaw : evolRaw.data || [];
-        const conv = Array.isArray(convRaw) ? convRaw : convRaw.data || [];
-        const merged = conv.map((metric: any) => {
-          const fullInfo = evol.find(
-            (e: any) =>
-              String(e.cvId || e.id) === String(metric.cvId || metric.id),
-          );
+        const merged = conversion.map((metric) => {
+          const fullInfo =
+            evolution.find((item) => item.date === metric.cvDate) ??
+            evolution.find((item) => item.score === metric.score);
 
           return {
-            ...metric,
-            cvId: metric.cvId || metric.id,
-            score: fullInfo?.score || metric.score,
-            cvURL: fullInfo?.cvURL || fullInfo?.cvUrl || null,
+            cvId: fullInfo?.versionId ?? metric.cvDate,
+            score: fullInfo?.score ?? metric.score,
+            versionDate: fullInfo?.date ?? metric.cvDate,
+            cvUrl: fullInfo?.cvUrl ?? null,
+            efficiency: metric.efficiency,
+            totalApplied: metric.totalApplied,
           };
         });
 
         setPerformanceData(merged);
       } catch (error) {
-        console.error("Error en useCvPerformance:", error);
+        handleApiError(error, "No pudimos cargar el rendimiento de CV");
       } finally {
         setLoading(false);
       }
     };
 
-    fetchData();
-  }, [session]);
+    void fetchData();
+  }, [session, status]);
 
   return { performanceData, loading };
 }

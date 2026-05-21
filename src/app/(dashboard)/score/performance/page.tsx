@@ -4,6 +4,7 @@ import { IACoachBanner } from "@/components/performancePage/IACoachBanner";
 import { StatsCards } from "@/components/performancePage/StatsCards";
 import { useCvAnalytics } from "@/hooks/useCvAnalytics";
 import { useCvPerformance } from "@/hooks/useCvPerformance";
+import type { BackendCvPerformanceItem } from "@/types/backend";
 
 export default function PerformancePage() {
   const { data, loading: loadingAnalytics } = useCvAnalytics();
@@ -14,14 +15,14 @@ export default function PerformancePage() {
       <div className="p-10 text-white italic">Sincronizando métricas...</div>
     );
 
-  const enrichedData = data.map((item: any) => {
+  const enrichedData: BackendCvPerformanceItem[] = data.map((item) => {
     const perf = performanceData?.find(
-      (p: any) => String(p.cvId) === String(item.cvId),
+      (p) => String(p.cvId) === String(item.cvId),
     );
 
     return {
       ...item,
-      score: perf?.score || item.score,
+      score: perf?.score ?? item.score,
       cvUrl: item.cvUrl || perf?.cvUrl || null,
     };
   });

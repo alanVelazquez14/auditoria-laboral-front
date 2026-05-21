@@ -1,4 +1,5 @@
 "use client";
+
 import PageTransition from "@/components/PageTransition";
 import { Lock } from "lucide-react";
 import { useState } from "react";
@@ -7,45 +8,39 @@ import PhotoAndData from "./PhotoAndData";
 import CV from "./CV";
 import BasicInfoModal from "./BasicInfoModal";
 import { useSession } from "next-auth/react";
+import { apiClientRequest } from "@/lib/api-client";
+import { handleApiError } from "@/utils/error-handler";
+import type { BackendUserMe } from "@/types/backend";
 
-export default function ProfilePage({ userData }: { userData: any }) {
+export default function ProfilePage({ userData }: { userData: BackendUserMe }) {
   const { data: session } = useSession();
   const [isSending, setIsSending] = useState(false);
   const [isEditBasicOpen, setIsEditBasicOpen] = useState(false);
-
   const [profileData, setProfileData] = useState(userData);
 
   const handleResetPassword = async () => {
     try {
       setIsSending(true);
-      const response = await fetch(
-        `${process.env.NEXT_PUBLIC_API_URL}/api/users/forgot-password`,
-        {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ email: profileData.email }),
-        },
-      );
 
-      if (!response.ok) throw new Error("No se pudo enviar el correo");
+      await apiClientRequest("/api/users/forgot-password", {
+        method: "POST",
+        body: { email: profileData.email },
+      });
 
       toast.success("Enlace de seguridad enviado", {
         description: "Revisa tu bandeja de entrada para cambiar tu contraseña.",
       });
     } catch (error) {
-      toast.error("Error al procesar la solicitud");
+      handleApiError(error, "Error al procesar la solicitud");
     } finally {
       setIsSending(false);
     }
   };
 
-  const handleUpdateProfile = async (updatedFields: any) => {
-    const token =
-      (session as any)?.user?.accessToken || (session as any)?.accessToken;
-    if (!token) return;
-
+  const handleUpdateProfile = async (updatedFields: Partial<BackendUserMe>) => {
     try {
       setIsSending(true);
+
       const body = {
         location: updatedFields.location,
         englishLevel: updatedFields.englishLevel,
@@ -54,7 +49,6 @@ export default function ProfilePage({ userData }: { userData: any }) {
         recentApplications: updatedFields.recentApplications,
         stackYears: updatedFields.stackYears,
         applicationType: updatedFields.applicationType,
-
         targetRole: profileData.targetRole || "fullstack",
         yearsExperience: profileData.yearsExperience || "1-3",
         stack: profileData.stack || [],
@@ -66,50 +60,37 @@ export default function ProfilePage({ userData }: { userData: any }) {
         consentToShareData: true,
       };
 
-      const response = await fetch(
-        `${process.env.NEXT_PUBLIC_API_URL}/api/users/${profileData.id}/profile`,
-        {
-          method: "PATCH",
-          headers: {
-            "Content-Type": "application/json",
-            Authorization: `Bearer ${token}`,
-          },
-          body: JSON.stringify(body),
-        },
-      );
+      await apiClientRequest("/api/users/me/profile", {
+        method: "PATCH",
+        auth: true,
+        session,
+        body,
+      });
 
-      if (!response.ok) {
-        const errorData = await response.json();
-        const errorMessage = Array.isArray(errorData.message)
-          ? errorData.message.join(", ")
-          : errorData.message;
-        throw new Error(errorMessage || "Error en la validación del servidor");
-      }
-
-      setProfileData((prev: any) => ({
+      setProfileData((prev) => ({
         ...prev,
         ...updatedFields,
       }));
 
-      toast.success("¡Perfil actualizado!");
+      toast.success("Perfil actualizado");
       setIsEditBasicOpen(false);
-    } catch (error: any) {
-      console.error("Error detallado:", error.message);
-      toast.error("Error al guardar", { description: error.message });
+    } catch (error) {
+      handleApiError(error, "Error al guardar");
     } finally {
       setIsSending(false);
     }
   };
 
-  if (!profileData)
+  if (!profileData) {
     return <div className="p-8 text-white">Cargando perfil...</div>;
+  }
 
   return (
     <PageTransition>
       <div className="p-8 max-w-8xl">
         <header className="mb-10">
           <h1 className="text-3xl font-bold text-white tracking-tight">
-            Mi Perfil
+            Mi perfil
           </h1>
           <p className="text-gray-400 mt-2">
             Gestiona tu identidad laboral y configuración de cuenta.
@@ -117,7 +98,6 @@ export default function ProfilePage({ userData }: { userData: any }) {
         </header>
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-          {/* COLUMNA IZQUIERDA: Foto y Datos Básicos */}
           <div className="lg:col-span-1 space-y-6">
             <PhotoAndData
               userData={profileData}
@@ -134,13 +114,11 @@ export default function ProfilePage({ userData }: { userData: any }) {
               ) : (
                 <Lock size={16} />
               )}
-              {isSending ? "Enviando enlace..." : "Cambiar Contraseña"}
+              {isSending ? "Enviando enlace..." : "Cambiar contraseña"}
             </button>
           </div>
 
-          {/* COLUMNA DERECHA: Stack y CV */}
           <div className="lg:col-span-2 space-y-6">
-            {/* Gestión de CV */}
             <CV userData={profileData} />
           </div>
         </div>

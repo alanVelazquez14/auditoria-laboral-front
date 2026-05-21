@@ -1,9 +1,11 @@
+import type { BackendCvPerformanceItem } from "@/types/backend";
+
 export function ConversionChart({
   data,
   title,
   type,
 }: {
-  data: any[];
+  data: BackendCvPerformanceItem[];
   title: string;
   type: "success" | "rejection";
 }) {
