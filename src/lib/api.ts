@@ -1,21 +1,16 @@
-import { signOut } from "next-auth/react";
+import { apiClientRequest } from "@/lib/api-client";
 
 export const authenticatedFetch = async (
   url: string,
   options: RequestInit = {},
-  session: any,
+  session: unknown,
 ) => {
-  const res = await fetch(url, {
+  return apiClientRequest(url, {
     ...options,
-    headers: {
-      ...options.headers,
-      Authorization: `Bearer ${session?.user?.accessToken}`,
+    auth: true,
+    session: session as {
+      accessToken?: string | null;
+      user?: { accessToken?: string | null } | null;
     },
   });
-
-  if (res.status === 401) {
-    signOut({ callbackUrl: "/auth" });
-  }
-
-  return res;
 };
